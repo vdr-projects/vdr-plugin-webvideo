@@ -2,7 +2,7 @@
 
 # client.py - webvi command line client
 #
-# Copyright (c) 2009-2011 Antti Ajanki <antti.ajanki@iki.fi>
+# Copyright (c) 2009-2012 Antti Ajanki <antti.ajanki@iki.fi>
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -38,7 +38,7 @@ from urlparse import urlparse
 from webvi.constants import WebviRequestType, WebviOpt, WebviInfo, WebviSelectBitmask, WebviConfig, WebviSelect
 from . import menu
 
-VERSION = '0.4.4'
+VERSION = '0.4.5'
 
 # Default options
 DEFAULT_PLAYERS = ['mplayer -cache-min 10 "%s"',

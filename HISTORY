@@ -251,3 +251,7 @@ Video site modules:
 - Fixed Youtube support
 - Minor improvements in Katsomo and ruutu.fi support
 - Disabled broken Vimeo search
+
+2012-01-29: Version 0.4.5
+
+- Fixed Youtube breakage

@@ -1,3 +1,9 @@
+vdr-plugin-webvideo (0.4.5-1) unstable; urgency=low
+
+  * Fixed Youtube support
+
+ -- Antti Ajanki <antti.ajanki@iki.fi>  Sun, 29 Jan 2012 14:53:38 +0300
+
 vdr-plugin-webvideo (0.4.4-1) unstable; urgency=low
 
   * Fixed Youtube support
