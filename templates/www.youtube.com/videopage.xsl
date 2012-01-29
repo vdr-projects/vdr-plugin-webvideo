@@ -65,11 +65,11 @@
 	  <xsl:when test="$title">
 	    <xsl:value-of select="$title"/>
 	  </xsl:when>
-	  <xsl:when test="contains(substring-after($videoinfo, '&amp;title='), '&amp;')">
-	    <xsl:value-of select="substring-before(substring-after($videoinfo, '&amp;title='), '&amp;')"/>
+	  <xsl:when test="contains(substring-after($videoinfo, '\u0026amp;title='), '\u0026amp;')">
+	    <xsl:value-of select="substring-before(substring-after($videoinfo, '\u0026amp;title='), '\u0026amp;')"/>
 	  </xsl:when>
 	  <xsl:otherwise>
-	    <xsl:value-of select="substring-after($videoinfo, '&amp;title=')"/>
+	    <xsl:value-of select="substring-after($videoinfo, '\u0026amp;title=')"/>
 	  </xsl:otherwise>
 	</xsl:choose>
       </xsl:variable>
@@ -77,7 +77,7 @@
       <xsl:value-of select="str:decode-uri(str:replace($titleparam, '+', ' '))"/>
     </title>
 
-    <xsl:for-each select="str:split(str:decode-uri(substring-before(substring-after($videoinfo, '&amp;url_encoded_fmt_stream_map='), '&amp;')), ',')">
+    <xsl:for-each select="str:split(str:decode-uri(substring-before(substring-after($videoinfo, '\u0026amp;url_encoded_fmt_stream_map='), '\u0026amp;')), ',')">
       <xsl:call-template name="fmturl"/>
     </xsl:for-each>
 
@@ -87,7 +87,7 @@
 <!-- This is also called by youtu.be/videopage.xsl -->
 <xsl:template name="main">
   <xsl:variable name="videoinfo">
-    <xsl:value-of select="id('watch-player')/embed/@flashvars"/>
+    <xsl:value-of select="//script[contains(., 'flashvars')]/text()"/>
   </xsl:variable>
 
   <xsl:call-template name="mediaurl">
