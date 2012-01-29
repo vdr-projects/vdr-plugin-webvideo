@@ -323,7 +323,6 @@ char *cWebviTimerManager::UpgradedTemplatePath(char *ref) {
      {"wvt:///metacafe/", "wvt:///www.metacafe.com/"},
      {"wvt:///vimeo/", "wvt:///www.vimeo.com/"},
      {"wvt:///katsomo/", "wvt:///www.katsomo.fi/"},
-     {"wvt:///subtv/", "wvt:///www.sub.fi/"},
      {"wvt:///ruutufi/", "wvt:///www.ruutu.fi/"},
      {"wvt:///google/", "wvt:///video.google.com/"},
      {"wvt:///yleareena/", "wvt:///areena.yle.fi/"}};

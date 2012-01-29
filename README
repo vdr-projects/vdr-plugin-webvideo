@@ -16,7 +16,6 @@ Supported video sites:
 * Metacafe
 * MTV3 Katsomo
 * ruutu.fi [2]
-* Subtv
 * Vimeo
 * YLE Areena [2]
 * YouTube
@@ -28,8 +27,8 @@ Supported video sites:
 
 Known problems:
 
-* MTV3 Katsomo and Subtv: often the connection is lost before the
-  video is fully downloaded.
+* MTV3 Katsomo: often the connection is lost before the video is fully
+  downloaded.
 * Vimeo: Streaming does not work.
 
 Because of the modular design it is possible to add support for new

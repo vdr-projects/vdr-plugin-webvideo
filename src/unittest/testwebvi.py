@@ -392,33 +392,6 @@ class TestServiceModules(unittest.TestCase):
     #     self.assertNotEqual(resultref, None)
     #     self.downloadAndExtractLinks(resultref, 1, 'search result')
 
-    def testSubtv(self):
-        # Category page
-        ref = self.getServiceReference('../../templates/www.sub.fi')
-        links = self.downloadAndExtractLinks(ref, 4, 'series')
-
-        # Program page
-        plinks = []
-        for li in links:
-            plinks = self.downloadAndExtractLinks(li.ref, 0, 'program')
-            if plinks:
-                break
-        if not plinks:
-            self.assertTrue(False, 'None of the program pages has links')
-
-        # Video link
-        videolink = plinks[0]
-        self.assertNotEqual(videolink.stream, None, 'No media object in a video link')
-        self.assertNotEqual(videolink.ref, None, 'No description page in a video link')
-
-        # Direct video page link
-        queries, params = self.extractQueryParams(plinks[0].stream)
-        self.assertTrue('srcurl' in queries and 'pid' in params, 'Required parameter missing in video link')
-        videopageurl = queries['srcurl'] + '?' + params['pid']
-        videopageref = self.urlToWvtref(videopageurl)
-        self.checkMediaUrl(videopageref)
-        
-
 
 if __name__ == '__main__':
     testnames = sys.argv[1:]
