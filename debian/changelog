@@ -1,8 +1,9 @@
 vdr-plugin-webvideo (0.4.5-1) unstable; urgency=low
 
-  * Fixed Youtube support
+  * Fixed Youtube, Google Video support
+  * Removed SubTV support. SubTV programs are available in Katsomo.
 
- -- Antti Ajanki <antti.ajanki@iki.fi>  Sun, 29 Jan 2012 14:53:38 +0300
+ -- Antti Ajanki <antti.ajanki@iki.fi>  Sun, 29 Jan 2012 19:27:37 +0200
 
 vdr-plugin-webvideo (0.4.4-1) unstable; urgency=low
 

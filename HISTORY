@@ -254,5 +254,5 @@ Video site modules:
 
 2012-01-29: Version 0.4.5
 
-- Fixed Youtube breakage
-- Removed SubTV support, SubTV programs are available in Katsomo
+- Fixed Youtube, Google Video breakage
+- Removed SubTV support. SubTV programs are available in Katsomo.
