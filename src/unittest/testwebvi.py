@@ -344,7 +344,7 @@ class TestServiceModules(unittest.TestCase):
         self.assertTrue(isinstance(menuobj[1], menu.MenuItemSubmitButton))
 
         # Query term
-        menuobj[0].value = 'mtv3'
+        menuobj[0].value = 'mtv'
 
         resultref = menuobj[1].activate()
         self.assertNotEqual(resultref, None)
