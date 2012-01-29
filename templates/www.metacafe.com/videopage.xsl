@@ -8,10 +8,15 @@ xmlns:str="http://exslt.org/strings">
   <xsl:variable name="mediadata">
     <xsl:value-of select="str:decode-uri(substring-before(substring-after(//param[@name='flashvars']/@value, 'mediaData='), '&amp;'))"/>
   </xsl:variable>
+  <xsl:variable name="gda">
+    <xsl:value-of select="substring-before(substring-after($mediadata, 'key&quot;:&quot;'), '&quot;')" />
+  </xsl:variable>
 
   <mediaurl>
-    <title><xsl:value-of select="normalize-space(id('ItemTitle'))"/></title>
-    <url><xsl:value-of select="concat(str:replace(substring-before(substring-after($mediadata, 'mediaURL&quot;:&quot;'), '&quot;'), '\/', '/'), '?__gda__=', substring-before(substring-after($mediadata, 'key&quot;:&quot;'), '&quot;'))"/></url>
+    <xsl:if test="$gda != ''">
+      <title><xsl:value-of select="normalize-space(id('ItemTitle'))"/></title>
+      <url><xsl:value-of select="concat(str:replace(substring-before(substring-after($mediadata, 'mediaURL&quot;:&quot;'), '&quot;'), '\/', '/'), '?__gda__=', $gda)"/></url>
+    </xsl:if>
   </mediaurl>
 </xsl:template>
 
