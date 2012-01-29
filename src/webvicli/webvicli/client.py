@@ -50,6 +50,7 @@ DEFAULT_PLAYERS = ['mplayer -cache-min 10 "%s"',
 mimetypes.init()
 mimetypes.add_type('video/flv', '.flv')
 mimetypes.add_type('video/x-flv', '.flv')
+mimetypes.add_type('video/webm', '.webm')
 
 def safe_filename(name, vfat):
     """Sanitize a filename. If vfat is False, replace '/' with '_', if
