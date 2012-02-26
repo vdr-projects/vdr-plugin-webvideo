@@ -18,5 +18,3 @@ Fix support for mplayer plugin
 Fix Vimeo search
 
 Kill external downloader process when the player stops mid-stream
-
-webvi: load video based on web page url

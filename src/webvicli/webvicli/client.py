@@ -67,6 +67,13 @@ def safe_filename(name, vfat):
 
     return res
 
+def url_to_wvtref(url):
+    domain = urlparse(url).netloc.lower()
+    if domain == '':
+        return None
+
+    return 'wvt:///%s/videopage.xsl?srcurl=%s' % (domain, urllib.quote(url, ''))
+
 class DownloadData:
     def __init__(self, handle, progressstream):
         self.handle = handle
@@ -637,13 +644,6 @@ class WVShell(cmd.Cmd):
             return None
         return menupage[v]
 
-    def url_to_wvtref(self, url):
-        domain = urlparse(url).netloc.lower()
-        if domain == '':
-            return None
-
-        return 'wvt:///%s/videopage.xsl?srcurl=%s' % (domain, urllib.quote(url, ''))
-        
     def do_select(self, arg):
         """select x
 Select the link whose index is x.
@@ -679,7 +679,7 @@ URL of a video page.
             pass
 
         if stream is None and arg.find('://') != -1:
-            stream = self.url_to_wvtref(arg)
+            stream = url_to_wvtref(arg)
 
         if stream is not None:
             self.client.download(stream)
@@ -702,7 +702,7 @@ Play a stream. x can be an integer referring to a downloadable item
             pass
 
         if stream is None and arg.find('://') != -1:
-            stream = self.url_to_wvtref(arg)
+            stream = url_to_wvtref(arg)
 
         if stream is not None:
             self.client.play_stream(stream)
@@ -811,6 +811,10 @@ def parse_command_line(cmdlineargs, options):
     parser.add_option('--vfat', action='store_true',
                       dest='vfat', default=False,
                       help='generate Windows compatible filenames')
+    parser.add_option('-u', '--url', type='string',
+                      dest='url',
+                      help='Download video from URL and exit',
+                      metavar='URL', default=None)
     cmdlineopt = parser.parse_args(cmdlineargs)[0]
 
     if cmdlineopt.templatepath is not None:
@@ -819,6 +823,8 @@ def parse_command_line(cmdlineargs, options):
         options['verbose'] = cmdlineopt.verbose
     if cmdlineopt.vfat:
         options['vfat'] = cmdlineopt.vfat
+    if cmdlineopt.url:
+        options['url'] = cmdlineopt.url
 
     return options
 
@@ -854,10 +860,25 @@ def main(argv):
     if options.has_key('templatepath'):
         webvi.api.set_config(WebviConfig.TEMPLATE_PATH, options['templatepath'])
 
-    shell = WVShell(WVClient(player_list(options),
-                             options.get('download-limits', {}),
-                             options.get('stream-limits', {}),
-                             options.get('vfat', False)))
+    client = WVClient(player_list(options),
+                      options.get('download-limits', {}),
+                      options.get('stream-limits', {}),
+                      options.get('vfat', False))
+
+    if options.has_key('url'):
+        stream = url_to_wvtref(options['url'])
+        if not stream:
+            print >> sys.stderr, 'Can\'t find video at ' + options['url']
+            sys.exit(1)
+            
+        if not client.download(stream):
+            # FIXME: more helpful error message if URL is not a
+            # supported site
+            sys.exit(1)
+            
+        sys.exit(0)
+
+    shell = WVShell(client)
     shell.cmdloop()
 
 if __name__ == '__main__':

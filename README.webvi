@@ -49,6 +49,7 @@ Command line parameters
 -h, --help                  show this help message and exit
 -t DIR, --templatepath=DIR  read video site templates from DIR
 --vfat                      generate Windows compatible filenames
+-u URL, --url=URL           Download video from URL and exit
 -v, --verbose               debug output
 
 Usage
@@ -76,6 +77,10 @@ x is an index of menu item or an address of a video page (download and
 stream commands). A plain number without a command follows a link
 (like "select") or downloads a stream (like "download") if the item is
 not a navigation link.
+
+The command line option --url runs a single download mode that
+downloads a video from the the given URL and exits. URL must point to
+a video page on one of the supported sites (see README).
 
 Config file
 -----------
