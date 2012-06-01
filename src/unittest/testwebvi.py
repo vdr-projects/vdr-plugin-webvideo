@@ -251,64 +251,54 @@ class TestServiceModules(unittest.TestCase):
         ref = self.getServiceReference('../../templates/areena.yle.fi')
         links = self.downloadAndExtractLinks(ref, 3, 'category')
 
-        # The first is "Search", the second is "live", the third is
-        # "all", the rest are navigation links.
-        liveref = links[1].ref
-        navigationref = links[3].ref
+        # The first is "Search", the second is "all tv", the rest are
+        # navigation links.
+        navigationref = links[1].ref
 
-        # Navigation page
         links = self.downloadAndExtractLinks(navigationref, 2, 'navigation')
 
-        # Video link
-        videolink = links[0]
-        self.assertNotEqual(videolink.stream, None, 'No media object in a video link')
-        self.assertNotEqual(videolink.ref, None, 'No description page in a video link')
+        videolink = None
+        for link in links:
+            if link.stream is not None:
+                videolink = link
+                break
 
-        # Direct video page link
-        queries, params = self.extractQueryParams(videolink.stream)
-        self.assertTrue('srcurl' in queries, 'Required parameter missing in video link')
-        videopageurl = queries['srcurl']
-        videopageref = self.urlToWvtref(videopageurl)
-        self.checkMediaUrl(videopageref)
-
-        # live broadcasts
-        links = self.downloadAndExtractLinks(liveref, 2, 'live broadcasts')
+        self.assertNotEqual(videolink, None, 'No media links')
+        self.assertNotEqual(videolink.stream, None, 'No media object in video link')
+        self.assertNotEqual(videolink.ref, None, 'No description in video link')
 
     def testYLEAreenaSearch(self):
-        menuobj = self.downloadMenuPage('wvt:///areena.yle.fi/search.xsl?srcurl=http://areena.yle.fi/haku', 'search')
-        self.assertTrue(len(menuobj) >= 8, 'Too few items in search menu')
+        menuobj = self.downloadMenuPage('wvt:///areena.yle.fi/search.xsl', 'search')
+        self.assertTrue(len(menuobj) >= 9, 'Too few items in search menu')
 
         self.assertTrue(isinstance(menuobj[0], menu.MenuItemTextField))
         self.assertTrue(isinstance(menuobj[1], menu.MenuItemList))
-        self.assertTrue(len(menuobj[1].items) >= 3)
         self.assertTrue(isinstance(menuobj[2], menu.MenuItemList))
-        self.assertTrue(len(menuobj[2].items) >= 2)
         self.assertTrue(isinstance(menuobj[3], menu.MenuItemList))
-        self.assertTrue(len(menuobj[3].items) >= 2)
         self.assertTrue(isinstance(menuobj[4], menu.MenuItemList))
-        self.assertTrue(len(menuobj[4].items) >= 3)
         self.assertTrue(isinstance(menuobj[5], menu.MenuItemList))
-        self.assertTrue(len(menuobj[5].items) >= 4)
         self.assertTrue(isinstance(menuobj[6], menu.MenuItemList))
-        self.assertTrue(len(menuobj[6].items) >= 2)
-        self.assertTrue(isinstance(menuobj[7], menu.MenuItemSubmitButton))
+        self.assertTrue(isinstance(menuobj[7], menu.MenuItemList))
+        self.assertTrue(isinstance(menuobj[8], menu.MenuItemSubmitButton))
 
         # Query term
         menuobj[0].value = 'yle'
         # Media: video
         menuobj[1].current = 1
-        # Category: all
-        menuobj[2].current = 0
-        # Channel: all
+        # Order: alphabetical
+        menuobj[2].current = 1
+        # Type: Episodes
         menuobj[3].current = 0
-        # Language: Finnish
-        menuobj[4].current = 1
-        # Uploaded: all
+        # Channel: all
+        menuobj[4].current = 0
+        # Language: all
         menuobj[5].current = 0
-        # Only outside Finland: no
+        # Subtitles: all
         menuobj[6].current = 0
+        # Only outside Finland: no
+        menuobj[7].current = 0
 
-        resultref = menuobj[7].activate()
+        resultref = menuobj[8].activate()
         self.assertNotEqual(resultref, None)
         self.downloadAndExtractLinks(resultref, 1, 'search result')
 

@@ -1,30 +1,20 @@
 <?xml version="1.0" encoding="ISO-8859-1"?>
 
 <xsl:stylesheet version="1.0"
-  xmlns:xsl="http://www.w3.org/1999/XSL/Transform">
+  xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
+  xmlns:str="http://exslt.org/strings">
 
-<xsl:template match="text()"/>
-
-<!-- Käynnissä olevat lähetykset -->
-<xsl:template match="div[@class='ongoing']//div[@class='showlistitem-description']">
+<xsl:template match="/jsondocument/dict/current/list/li/dict/pubContent/dict">
   <link>
-    <label><xsl:value-of select="a"/></label>
-    <stream>wvt:///areena.yle.fi/livestream.xsl?param=stream,<xsl:value-of select='substring-before(substring-after(a/@onclick, "stream&apos;, &apos;"), "&apos;")'/></stream>
+    <label><xsl:value-of select="title"/></label>
+    <ref>wvt:///areena.yle.fi/description.xsl?srcurl=<xsl:value-of select="str:encode-uri(concat('http://areena.yle.fi/tv/', id, '.json'), true())"/>&amp;param=title,<xsl:value-of select="str:encode-uri(title, true())"/>&amp;postprocess=json2xml</ref>
+    <stream>wvt:///areena.yle.fi/video.xsl?srcurl=&amp;param=title,<xsl:value-of select="str:encode-uri(title, true())"/>&amp;param=type,<xsl:value-of select="type"/>&amp;param=id,<xsl:value-of select="id"/></stream>
   </link>
 </xsl:template>
 
-<!-- "Aina suorana" -->
-<xsl:template match="div[contains(@class, 'live-container')]">
-  <link>
-    <label><xsl:value-of select="h2/span/a"/></label>
-    <stream>wvt:///areena.yle.fi/livestream.xsl?param=stream,<xsl:value-of select='substring-before(substring-after(h2/span/a/@onclick, "stream&apos;, &apos;"), "&apos;")'/></stream>
-  </link>
-</xsl:template>
-
-<!-- Tulevat lähetykset -->
-<xsl:template match="div[@class='upcoming']/div/div[@class='showlistitem-description']">
+<xsl:template match="/jsondocument/dict/upcoming/list/li/dict/items/list/li/dict">
   <textarea>
-    <label><xsl:value-of select="h3"/>, <xsl:value-of select="ul/li[1]"/></label>
+    <label><xsl:value-of select="concat(translate(start, 'T', ' '), ' ', pubContent/dict/title)"/></label>
   </textarea>
 </xsl:template>
 
@@ -32,14 +22,16 @@
 <wvmenu>
   <title>Suorat lähetykset</title>
 
-  <xsl:apply-templates select="id('liveshows')/div[@class='ongoing']"/>
-
-  <xsl:apply-templates select="id('liveshows')/div/div[contains(@class, 'live-container')]"/>
+  <textarea>
+    <label>Nyt suorana</label>
+  </textarea>
+  <xsl:apply-templates select="/jsondocument/dict/current/list/li/dict/pubContent/dict"/>
 
   <textarea>
-    <label>Tulossa seuraavaksi:</label>
+    <label>Tulossa</label>
   </textarea>
-  <xsl:apply-templates select="id('liveshows')/div[@class='upcoming']"/>
+  <xsl:apply-templates select="/jsondocument/dict/upcoming/list/li/dict/items/list/li/dict"/>
+
 </wvmenu>
 </xsl:template>
 

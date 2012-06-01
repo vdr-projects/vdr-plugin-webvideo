@@ -1,35 +1,43 @@
 <?xml version="1.0" encoding="ISO-8859-1"?>
 
 <xsl:stylesheet version="1.0"
-  xmlns:xsl="http://www.w3.org/1999/XSL/Transform">
+  xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
+  xmlns:str="http://exslt.org/strings">
 
-<xsl:param name="docurl"/>
+<xsl:include href="common.xsl"/>
 
-<xsl:template match="/">
+<xsl:param name="title"/>
+
+<xsl:template match="/jsondocument/dict">
+<xsl:variable name = "typeurl">
+  <xsl:call-template name="type_to_path">
+    <xsl:with-param name="type" select="series/dict/type"/>
+  </xsl:call-template>
+</xsl:variable>
+
 <wvmenu>
-  <title><xsl:value-of select="normalize-space(//h1[@class='cliptitle'])"/></title>
+  <title><xsl:value-of select="normalize-space($title)"/></title>
   <textarea>
-    <label><xsl:value-of select="normalize-space(id('relatedinfo')//div[@class='relatedinfo-text description'])"/></label>
+    <label><xsl:value-of select="normalize-space(desc)"/></label>
   </textarea>
   <textarea>
-    <!-- Kesto -->
-    <label><xsl:value-of select="id('relatedinfo')/div/div/div[@class='relatedinfo-text meta']/ul/li[contains(., 'Kesto')]"/></label>
+    <label>Kesto: <xsl:value-of select="duration"/> min</label>
   </textarea>
   <textarea>
-    <!-- Julkaistu -->
-    <label><xsl:value-of select="id('relatedinfo-more')/div/div[1]/ul/li[contains(., 'Julkaistu')]"/></label>
+    <label>Julkaistu: <xsl:value-of select="translate(published, 'T', ' ')"/></label>
   </textarea>
   <textarea>
-    <!-- Kieli -->
-    <label><xsl:value-of select="id('relatedinfo-more')/div/div[2]/ul[1]/li[1]"/></label>
+    <label>
+      <xsl:choose>
+        <xsl:when test="type = 'audio'">Radio</xsl:when>
+        <xsl:otherwise>TV</xsl:otherwise>
+      </xsl:choose>
+    </label>
   </textarea>
-  <textarea>
-    <!-- Kanava -->
-    <label><xsl:value-of select="id('relatedinfo')//div[@class='relatedinfo-text meta']/ul/li[1]"/></label>
-  </textarea>
+
   <link>
-    <label>Download this video</label>
-    <stream>wvt:///areena.yle.fi/videopage.xsl?srcurl=<xsl:value-of select="$docurl"/></stream>
+    <label>Lataa</label>
+    <stream>wvt:///areena.yle.fi/video.xsl?param=title,<xsl:value-of select="str:encode-uri($title, true())"/>&amp;param=type,<xsl:value-of select="str:encode-uri(type, true())"/>&amp;param=id,<xsl:value-of select="id"/></stream>
   </link>
 </wvmenu>
 </xsl:template>
