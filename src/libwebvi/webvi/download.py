@@ -330,7 +330,7 @@ class MMSDownload(DownloaderBase, asyncore.file_dispatcher):
         try:
             self.stream = libmms.Stream(self.url, 1000000)
         except libmms.Error, exc:
-            self.errmsg = exc.message
+            self.errmsg = str(exc)
             self.handle_close()
             return
 
@@ -364,7 +364,7 @@ class MMSDownload(DownloaderBase, asyncore.file_dispatcher):
             if data and (self.writefunc is not None):
                 self.writefunc(data)
         except libmms.Error, exc:
-            self.errmsg = exc.message
+            self.errmsg = str(exc)
             self.handle_close()
             return
 
