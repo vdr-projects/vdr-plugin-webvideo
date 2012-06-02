@@ -7,8 +7,8 @@
 <xsl:template match="/">
   <mediaurl>
     <!-- Jakson/ohjelman nimi -->
-    <title><xsl:value-of select="normalize-space(concat(substring-before(//div[@id='single-entry']/h3, '&#8211;'), ' - ' , substring-after(//div[@id='single-entry']/h3, '&#8211;')))"/></title>
-    <url priority="50"><xsl:value-of select='substring-before(substring-after(//div[@id="single-entry"]/script, "file&apos;,&apos;"), "&apos;")'/></url>
+    <title><xsl:value-of select="normalize-space(/html/head/meta[@property='og:title']/@content)"/></title>
+    <url priority="50"><xsl:value-of select="substring-before(substring-after(/html/head/meta[@property='og:video']/@content, 'file='), '&amp;')"/></url>
   </mediaurl>
 </xsl:template>
 

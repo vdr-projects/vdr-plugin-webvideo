@@ -5,13 +5,9 @@
 
 <xsl:template match="/">
 <wvmenu>
-  <title><xsl:value-of select="normalize-space(concat(substring-before(//div[@id='single-entry']/h3, '&#8211;'), ' - ' , substring-after(//div[@id='single-entry']/h3, '&#8211;')))"/></title>
+  <title><xsl:value-of select="normalize-space(/html/head/meta[@property='og:title']/@content)"/></title>
   <textarea>
-    <label><xsl:value-of select="//div[@id='single-entry']/p"/></label>
-  </textarea>
-  <textarea>
-    <!-- Julkaistu -->
-    <label>Julkaistu: <xsl:value-of select="//div[@id='single-entry']/div[@class='entry-footer']/p"/></label>
+    <label><xsl:value-of select="normalize-space(/html/head/meta[@property='og:description']/@content)"/></label>
   </textarea>
 </wvmenu>
 </xsl:template>
