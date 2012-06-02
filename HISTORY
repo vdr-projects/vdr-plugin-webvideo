@@ -1,6 +1,12 @@
 VDR Plugin 'webvideo' Revision History
 --------------------------------------
 
+2012-06-02: Version 0.4.7
+
+- Support new Yle Areena
+- Removed broken Vimeo support
+- Fixed MoonTV and Metacafe
+
 2012-02-26: Version 0.4.6
 
 - webvi: New option --url for downloading a single video

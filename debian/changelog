@@ -1,3 +1,11 @@
+vdr-plugin-webvideo (0.4.7-1) unstable; urgency=low
+
+  * Support new Yle Areena
+  * Removed broken Vimeo support
+  * Fixed MoonTV and Metacafe
+
+ -- Antti Ajanki <antti.ajanki@iki.fi>  Sat, 02 Jun 2012 10:00:50 +0300
+
 vdr-plugin-webvideo (0.4.6-1) unstable; urgency=low
 
   * webvi: New option --url for downloading a single video
