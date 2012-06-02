@@ -21,10 +21,12 @@ xmlns:xsl="http://www.w3.org/1999/XSL/Transform">
     <!-- '18+ Only' is empty unless family filter is off. Ignore the
          category until I find a way to turn off the filter. -->
     <xsl:if test="@title != '18+ Only'">
-      <link>
-	<label><xsl:value-of select="@title"/></label>
-	<ref>wvt:///www.metacafe.com/navigation.xsl?srcurl=/api/videos/-/<xsl:value-of select="substring-after(@href, '/videos/')"/></ref>
-      </link>
+      <xsl:if test="@title != ''">
+	<link>
+	  <label><xsl:value-of select="."/></label>
+	  <ref>wvt:///www.metacafe.com/navigation.xsl?srcurl=/api/videos/-/<xsl:value-of select="substring-after(@href, '/videos/')"/></ref>
+	</link>
+      </xsl:if>
     </xsl:if>
   </xsl:for-each>
 </wvmenu>
