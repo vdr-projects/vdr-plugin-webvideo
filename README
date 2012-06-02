@@ -16,11 +16,10 @@ Supported video sites:
 * Metacafe
 * MTV3 Katsomo
 * ruutu.fi [2]
-* Vimeo
 * YLE Areena [2]
 * YouTube
 
-[1] Only videos hosted by Google, YouTube, Vimeo
+[1] Only videos hosted by Google, YouTube, Metacafe
 
 [2] Requires rtmpdump-yle
     (http://users.tkk.fi/~aajanki/rtmpdump-yle/index.html).
@@ -29,7 +28,6 @@ Known problems:
 
 * MTV3 Katsomo: often the connection is lost before the video is fully
   downloaded.
-* Vimeo: Streaming does not work.
 
 Because of the modular design it is possible to add support for new
 sites quite easily. See doc/developers.txt for more information.

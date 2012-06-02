@@ -46,14 +46,6 @@
 	    </link>
           </xsl:when>
 
-          <xsl:when test="starts-with($url, 'http://vimeo.com/')">
-	    <link>
-	      <label><xsl:value-of select="normalize-space(.)"/></label>
-	      <stream>wvt:///vimeo.com/video.xsl?srcurl=http://www.vimeo.com/moogaloop/load/clip:<xsl:value-of select="substring-after($url, 'http://vimeo.com/')"/>&amp;HTTP-header=user-agent,Wget/1.2%20%28linux-gnu%29</stream>
-	      <ref>wvt:///vimeo.com/description.xsl?srcurl=http://vimeo.com/api/v2/video/<xsl:value-of select="substring-after($url, 'http://vimeo.com/')"/>.xml</ref>
-	    </link>
-          </xsl:when>
-
         </xsl:choose>
       </xsl:for-each>
 

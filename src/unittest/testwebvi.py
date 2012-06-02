@@ -217,35 +217,6 @@ class TestServiceModules(unittest.TestCase):
         self.assertNotEqual(resultref, None)
         self.downloadAndExtractLinks(resultref, 1, 'search result')
 
-    def testVimeo(self):
-        # Category page
-        ref = self.getServiceReference('../../templates/vimeo.com')
-        links = self.downloadAndExtractLinks(ref, 2, 'Vimeo main page')
-
-        # The first "Channels" and the second is "Groups"
-        channelsref = links[0].ref
-        groupsref = links[1].ref
-
-        # Channels page
-        links = self.downloadAndExtractLinks(channelsref, 2, 'channels')
-
-        # Navigation page
-        links = self.downloadAndExtractLinks(links[0].ref, 2, 'channels navigation')
-
-        # Video link
-        videolink = links[0]
-        self.assertNotEqual(videolink.stream, None, 'No media object in a video link')
-        self.assertNotEqual(videolink.ref, None, 'No description page in a video link')
-        queries, params = self.extractQueryParams(videolink.stream)
-        self.assertTrue('srcurl' in queries, 'Required parameter missing in video link')
-        self.checkMediaUrl(videolink.stream)
-
-        # User groups
-        links = self.downloadAndExtractLinks(groupsref, 2, 'channel list')
-
-        # Navigation page
-        links = self.downloadAndExtractLinks(links[0].ref, 2, 'groups navigation')
-
     def testYLEAreena(self):
         # Category page
         ref = self.getServiceReference('../../templates/areena.yle.fi')
