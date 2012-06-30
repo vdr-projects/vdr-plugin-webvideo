@@ -215,7 +215,7 @@ WebviResult webvi_delete_handle(WebviCtx ctx, WebviHandle h);
  *
  * Set the callback function that shall be called when data is read
  * from the network. The fourth parameter is a pointer to the callback
- * funtion
+ * function
  *
  * ssize_t (*webvi_callback)(const char *, size_t, void *).
  *
@@ -224,7 +224,7 @@ WebviResult webvi_delete_handle(WebviCtx ctx, WebviHandle h);
  * incoming data block in bytes, and the third parameter is a pointer
  * to user's data structure can be set by WEBVIOPT_WRITEDATA option.
  *
- * The callback funtion should return the number of bytes is
+ * The callback function should return the number of bytes is
  * processed. If this differs from the size of the incoming data
  * block, it indicates that an error occurred and the transfer will be
  * aborted.
@@ -241,7 +241,7 @@ WebviResult webvi_delete_handle(WebviCtx ctx, WebviHandle h);
  *
  * Set the callback function that shall be called when data is to be
  * send to network. The fourth parameter is a pointer to the callback
- * funtion
+ * function
  *
  * ssize_t (*webvi_callback)(const char *, size_t, void *)
  *
@@ -314,7 +314,7 @@ WebviResult webvi_fdset(WebviCtx ctx, fd_set *readfd, fd_set *writefd, fd_set *e
  * 
  * activefd is a file descriptor that was returned by an earlier call
  * to webvi_fdset and has been signalled to be ready by select() or
- * similar funtion. ev_bitmask should be OR'ed combination of
+ * similar function. ev_bitmask should be OR'ed combination of
  * WEBVI_SELECT_READ, WEBVI_SELECT_WRITE, WEBVI_SELECT_EXCEPTION to
  * indicate that activefd has been signalled to be ready for reading,
  * writing or being in exception state, respectively. ev_bitmask can

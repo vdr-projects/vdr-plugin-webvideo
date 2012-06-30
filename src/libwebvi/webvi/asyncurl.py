@@ -351,7 +351,7 @@ class async_curl_dispatcher:
 
     def handle_completed(self, err, errmsg):
         """Called when the download has finished. err is a numeric
-        error code (or 0 if the download was successfull) and errmsg
+        error code (or 0 if the download was successful) and errmsg
         is a curl error message as a string."""
         # It seems that a reference to self.write_to_buf forbids
         # garbage collection from deleting this object. unsetopt() or

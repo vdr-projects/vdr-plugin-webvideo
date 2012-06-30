@@ -103,7 +103,7 @@ public:
 
   virtual eRequestType GetType() { return REQT_MENU; }
 
-  // Return the content of the reponse message
+  // Return the content of the response message
   virtual cString GetResponse();
 
   void SetTimer(cWebviTimer *t) { timer = t; }

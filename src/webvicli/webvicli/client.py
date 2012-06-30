@@ -619,7 +619,7 @@ class WVShell(cmd.Cmd):
             return cmd.Cmd.onecmd(self, c)
         except Exception:
             import traceback
-            print 'Exception occured while handling command "' + c + '"'
+            print 'Exception occurred while handling command "' + c + '"'
             print traceback.format_exc()
             return False
 
