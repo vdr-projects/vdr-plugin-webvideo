@@ -20,30 +20,32 @@
 
 <xsl:template match="/">
 <wvmenu>
-  <title><xsl:value-of select="/Playerdata/Behavior/Program/@program_name"/></title>
-
-  <xsl:if test="/Playerdata/Behavior/Program/@description">
-    <textarea>
-      <label><xsl:value-of select="/Playerdata/Behavior/Program/@description"/></label>
-    </textarea>
-  </xsl:if>
+  <title><xsl:value-of select="normalize-space(//h1[@class='node-title'])"/></title>
 
   <textarea>
-    <label><xsl:value-of select="/Playerdata/Behavior/Program/@episode_name"/></label>
+    <label>
+      <xsl:value-of select="normalize-space(//div[contains(@class, 'field-name-field-season')])"/>
+      <xsl:text> </xsl:text>
+      <xsl:value-of select="normalize-space(//div[contains(@class, 'field-name-field-episode')])"/>
+    </label>
   </textarea>
 
   <textarea>
-    <label>Kesto: <xsl:call-template name="pretty-print-seconds">
-        <xsl:with-param name="seconds">
-          <xsl:value-of select="/Playerdata/Behavior/Program/@episode_duration"/>
-        </xsl:with-param>
-      </xsl:call-template>
+    <label><xsl:value-of select="normalize-space(//div[contains(@class, 'field-name-field-starttime')])"/></label>
+  </textarea>
+
+  <textarea>
+    <label><xsl:value-of select="normalize-space(//div[contains(@class, 'field-name-field-webdescription')])"/></label>
+  </textarea>
+
+  <textarea>
+    <label>Kesto: <xsl:value-of select="normalize-space(//div[contains(@class, 'field-name-field-duration')])"/>
     </label>
   </textarea>
 
   <link>
     <label>Lataa</label>
-    <stream>wvt:///www.ruutu.fi/video.xsl?srcurl=<xsl:value-of select="str:encode-uri($docurl, true())"/></stream>
+    <stream>wvt:///www.ruutu.fi/videopage.xsl?srcurl=<xsl:value-of select="str:encode-uri($docurl, true())"/></stream>
   </link>
 </wvmenu>
 </xsl:template>

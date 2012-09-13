@@ -7,7 +7,7 @@
 
 <xsl:template name="mediaurl">
 <mediaurl>
-  <title><xsl:value-of select="concat(/Playerdata/Behavior/Program/@program_name, ' ', /Playerdata/Behavior/Program/@episode_name)"/></title>
+  <title><xsl:value-of select="normalize-space(concat(/Playerdata/Behavior/Program/@program_name, ' ', /Playerdata/Behavior/Program/@episode_name))"/></title>
 
   <xsl:choose>
     <xsl:when test="starts-with(/Playerdata/Clip/SourceFile, 'rtmp://') or 

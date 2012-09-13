@@ -16,17 +16,17 @@
 
   <link>
     <label>Listaa sarjat</label>
-    <ref>wvt:///www.ruutu.fi/series.xsl?srcurl=http://www.ruutu.fi/ajax/media_get_netti_tv_series_list/all/false&amp;postprocess=json2xml</ref>
+    <ref>wvt:///www.ruutu.fi/series.xsl?srcurl=http://www.ruutu.fi/ajax/series-navi</ref>
   </link>
 
   <link>
     <label>Uusimmat</label>
-    <ref>wvt:///www.ruutu.fi/program.xsl?srcurl=http://www.ruutu.fi/ajax/media_get_nettitv_media/all/video_episode/__/latestdesc/0/25/true/__&amp;postprocess=json2xml</ref>
+    <ref>wvt:///www.ruutu.fi/recent.xsl?srcurl=http://www.ruutu.fi/etusivu</ref>
   </link>
 
   <link>
     <label>Katsotuimmat</label>
-    <ref>wvt:///www.ruutu.fi/program.xsl?srcurl=http://www.ruutu.fi/ajax/media_get_nettitv_media/all/video_episode/__/most_watched/0/25/true/__&amp;postprocess=json2xml</ref>
+    <ref>wvt:///www.ruutu.fi/mostviewed.xsl?srcurl=http://www.ruutu.fi/etusivu</ref>
   </link>
 </wvmenu>
 </xsl:template>

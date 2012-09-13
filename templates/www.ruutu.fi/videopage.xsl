@@ -11,9 +11,9 @@
 </xsl:template>
 
 <xsl:template match="/">
-  <xsl:param name="mediatype" select="substring-before(substring-after($docurl, 'vt='), '&amp;vid=')"/>
-  <xsl:param name="videoid" select="substring-after($docurl, '&amp;vid=')"/>
-  <xsl:variable name="videourl">http://www.nelonen.fi/utils/video_config/?q=<xsl:value-of select="$mediatype"/>/<xsl:value-of select="$videoid"/>&amp;site=www.ruutu.fi&amp;ageCheckURL=http://sso.nelonenmedia.fi/ajax/check_age/&amp;current_page=http://www.ruutu.fi/video</xsl:variable>
+  <xsl:param name="mediatype" select="substring-before(substring-after(id('block-ruutu-commerce-video-area')/script, 'type%3D'), '%26')"/>
+  <xsl:param name="videoid" select="substring-before(substring-after(id('block-ruutu-commerce-video-area')/script, 'id%3D'), '%26')"/>
+  <xsl:variable name="videourl">http://crossbow.nelonenmedia.fi/mxmlc?type=<xsl:value-of select="$mediatype"/>&amp;id=<xsl:value-of select="$videoid"/>&amp;site=www.ruutu.fi&amp;gRVBR=0</xsl:variable>
   <xsl:apply-templates select="document($videourl)" mode="video_config"/>
 </xsl:template>
 
