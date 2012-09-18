@@ -45,14 +45,14 @@ class TestServiceModules(unittest.TestCase):
     def setUp(self):
         webvi.api.set_config(WebviConfig.TEMPLATE_PATH, '../../templates')
         self.client = client.WVClient([], {}, {}, False)
-    
+
     def getLinks(self, menuobj):
         links = []
         for i in xrange(len(menuobj)):
             if isinstance(menuobj[i], menu.MenuItemLink):
                 links.append(menuobj[i])
         return links
-    
+
     def downloadMenuPage(self, reference, menuname):
         (status, statusmsg, menuobj) = self.client.getmenu(reference)
         self.assertEqual(status, 0, 'Unexpected status code %s (%s) in %s menu\nFailed ref was %s' % (status, statusmsg, menuname, reference))
@@ -101,7 +101,7 @@ class TestServiceModules(unittest.TestCase):
                 pname = psplit[0].lower()
                 if len(psplit) == 2:
                     pvalue = psplit[1]
-                
+
                 params[pname] = pvalue
 
             res[key] = urllib.unquote(val)
@@ -332,13 +332,9 @@ class TestServiceModules(unittest.TestCase):
         # Direct video page link
         queries, params = self.extractQueryParams(links[0].stream)
         self.assertTrue('srcurl' in queries, 'Required parameter missing in video link')
-        queries, params = self.extractQueryParams(queries['srcurl'])
-        self.assertTrue('q' in queries, 'Required parameter missing in video link')
-        vt, vid = queries['q'].split('/')
-        videopageurl = 'http://www.ruutu.fi/video?vt=%s&vid=%s' % (vt, vid)
-        videopageref = self.urlToWvtref(videopageurl)
+        videopageref = self.urlToWvtref(queries['srcurl'])
         self.checkMediaUrl(videopageref)
-        
+
     # def testRuutuFiSearch(self):
     #     menuobj = self.downloadMenuPage('wvt:///www.ruutu.fi/search.xsl', 'search')
     #     self.assertTrue(len(menuobj) >= 2, 'Too few items in search menu')
