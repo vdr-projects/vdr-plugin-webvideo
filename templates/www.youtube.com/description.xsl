@@ -64,7 +64,7 @@
 
   <link>
     <label>Download this video</label>
-    <stream>wvt:///www.youtube.com/videopage.xsl?srcurl=http://www.youtube.com/watch?v=<xsl:value-of select="/atom:entry/media:group/yt:videoid"/></stream>
+    <stream>wvt:///www.youtube.com/video.xsl?srcurl=http://www.youtube.com/get_video_info?%26video_id=<xsl:value-of select="/atom:entry/media:group/yt:videoid"/>%26el=detailpage%26ps=default%26eurl=%26gl=US%26hl=en</stream>
   </link>
 
 </wvmenu>
