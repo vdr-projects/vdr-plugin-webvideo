@@ -12,23 +12,9 @@
     <label>Search terms</label>
   </textfield>
 
-  <itemlist name="so">
-    <label>Sort by</label>
-    <item value="">Relevance</item>
-    <item value=",sbd:1">Date</item>
-  </itemlist>
-
-  <itemlist name="dur">
-    <label>Duration</label>
-    <item value="">All durations</item>
-    <item value=",dur:s">Short (&lt; 4 min)</item>
-    <item value=",dur:m">Medium (4-20 min)</item>
-    <item value=",dur:l">Long (&gt; 20 min)</item>
-  </itemlist>
-
   <button>
     <label>Search</label>
-    <submission>wvt:///video.google.com/searchresults.xsl?srcurl=<xsl:value-of select="str:encode-uri('http://www.google.com/search?q={q}&amp;tbs=vid:1{dur}{so}', true())"/>&amp;HTTP-header=User-Agent,Mozilla/5.0</submission>
+    <submission>wvt:///video.google.com/searchresults.xsl?srcurl=<xsl:value-of select="str:encode-uri('http://video.google.com/videosearch?q={q}+site:video.google.com&amp;start=0&amp;hl=en', true())"/>&amp;HTTP-header=User-Agent,Mozilla/5.0%20(X11;%20Linux%20x86_64;%20rv:5.0.1)%20Gecko/20100101%20Firefox/5.0.1</submission>
   </button>
 </wvmenu>
 </xsl:template>

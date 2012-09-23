@@ -153,23 +153,14 @@ class TestServiceModules(unittest.TestCase):
     def testGoogleSearch(self):
         ref = self.getServiceReference('../../templates/video.google.com')
         menuobj = self.downloadMenuPage(ref, 'search')
-        self.assertTrue(len(menuobj) == 4, 'Unexpected number of items in Google search menu')
 
         self.assertTrue(isinstance(menuobj[0], menu.MenuItemTextField))
-        self.assertTrue(isinstance(menuobj[1], menu.MenuItemList))
-        self.assertTrue(len(menuobj[1].items) >= 2)
-        self.assertTrue(isinstance(menuobj[2], menu.MenuItemList))
-        self.assertTrue(len(menuobj[2].items) >= 4)
-        self.assertTrue(isinstance(menuobj[3], menu.MenuItemSubmitButton))
+        self.assertTrue(isinstance(menuobj[-1], menu.MenuItemSubmitButton))
 
         # Query term
         menuobj[0].value = 'google'
-        # Sort by: date
-        menuobj[1].current = 3
-        # Duration: Short
-        menuobj[2].current = 1
 
-        resultref = menuobj[3].activate()
+        resultref = menuobj[-1].activate()
         self.assertNotEqual(resultref, None)
         self.downloadAndExtractLinks(resultref, 1, 'search result')
 

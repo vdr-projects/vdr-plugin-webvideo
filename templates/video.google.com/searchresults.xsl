@@ -4,12 +4,19 @@
   xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
   xmlns:str="http://exslt.org/strings">
 
+<xsl:template match="a">
+  <link>
+    <label><xsl:value-of select="."/></label>
+    <stream>wvt:///video.google.com/videopage.xsl?srcurl=<xsl:value-of select="str:encode-uri(@href, true())"/></stream>
+  </link>
+</xsl:template>
+
 <xsl:template match="/">
 <wvmenu>
   <title>Search results</title>
 
   <xsl:choose>
-    <xsl:when test="not(//li[contains(@class, 'g')]//td/a[not(img)])">
+    <xsl:when test="not(//a[starts-with(@href, 'http://video.google.com/videoplay?')])">
       <textarea>
         <label>
           <xsl:text>Your search did not return any results.</xsl:text>
@@ -18,43 +25,7 @@
     </xsl:when>
 
     <xsl:otherwise>
-      <xsl:for-each select="//li[@class='g']//td/a[not(img)]">
-	<xsl:variable name="url" select="str:decode-uri(substring-after(@href, 'q='))" />
-
-        <xsl:choose>
-          <xsl:when test="starts-with($url, 'http://www.youtube.com/')">
-	    <link>
-	      <label><xsl:value-of select="normalize-space(.)" /></label>
-	      <stream>wvt:///www.youtube.com/videopage.xsl?srcurl=<xsl:value-of select="str:encode-uri($url, true())"/></stream>
-	      <ref>wvt:///www.youtube.com/description.xsl?srcurl=<xsl:value-of select="str:encode-uri(concat('http://gdata.youtube.com/feeds/api/videos/', substring-after($url, 'v='), '?v=2'), true())"/></ref>
-	    </link>
-          </xsl:when>
-
-          <xsl:when test="starts-with($url, 'http://video.google.com/')">
-	    <link>
-	      <label><xsl:value-of select="normalize-space(.)"/></label>
-	      <stream>wvt:///video.google.com/videopage.xsl?srcurl=<xsl:value-of select="str:encode-uri($url, true())"/></stream>
-	      <ref>wvt:///video.google.com/description.xsl?srcurl=<xsl:value-of select="str:encode-uri($url, true())"/></ref>
-	    </link>
-          </xsl:when>
-
-          <xsl:when test="starts-with($url, 'http://www.metacafe.com/')">
-	    <link>
-	      <label><xsl:value-of select="normalize-space(.)"/></label>
-	      <stream>wvt:///www.metacafe.com/videopage.xsl?srcurl=<xsl:value-of select="str:encode-uri($url, true())"/></stream>
-	      <ref>wvt:///www.metacafe.com/description.xsl?srcurl=<xsl:value-of select="str:encode-uri($url, true())"/></ref>
-	    </link>
-          </xsl:when>
-
-        </xsl:choose>
-      </xsl:for-each>
-
-      <xsl:for-each select="id('nav')//td[@class='b']/a">
-        <link>
-          <label><xsl:value-of select="span[2]/text()"/></label>
-          <ref>wvt:///video.google.com/searchresults.xsl?srcurl=<xsl:value-of select="str:encode-uri(@href, true())"/></ref>
-        </link>
-      </xsl:for-each>
+      <xsl:apply-templates select="//a[starts-with(@href, 'http://video.google.com/videoplay?')]"/>
     </xsl:otherwise>
   </xsl:choose>
 
