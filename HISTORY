@@ -1,6 +1,10 @@
 VDR Plugin 'webvideo' Revision History
 --------------------------------------
 
+2012-09-24: Version 0.4.8
+
+- Fixed support for Youtube, Google Video, ruutu.fi, MoonTV
+
 2012-06-02: Version 0.4.7
 
 - Support new Yle Areena

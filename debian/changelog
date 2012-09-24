@@ -1,3 +1,9 @@
+vdr-plugin-webvideo (0.4.8-1) unstable; urgency=low
+
+  * Fixed support for Youtube, Google Video, ruutu.fi, MoonTV
+
+ -- Antti Ajanki <antti.ajanki@iki.fi>  Mon, 24 Sep 2012 21:12:54 +0300
+
 vdr-plugin-webvideo (0.4.7-1) unstable; urgency=low
 
   * Support new Yle Areena
