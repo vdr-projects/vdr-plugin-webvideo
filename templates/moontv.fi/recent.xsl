@@ -7,8 +7,9 @@
 
 <xsl:template match="/">
 <wvmenu>
-  <title><xsl:value-of select="id('content')/h2"/></title>
-  <xsl:for-each select="id('wrapper')/div[@class='thumbnails'][1]/div">
+  <title>MoonTV uusimmat videot</title>
+
+  <xsl:for-each select="//div[@class='thumbnails']/div">
     <link>
       <label><xsl:value-of select="h6"/></label>
       <ref>wvt:///moontv.fi/description.xsl?srcurl=<xsl:value-of select="str:encode-uri(a/@href, true())"/>&amp;HTTP-header=User-Agent,Mozilla/5.0</ref>

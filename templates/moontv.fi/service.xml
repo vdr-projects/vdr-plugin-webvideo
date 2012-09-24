@@ -2,6 +2,6 @@
 
 <service>
   <title>MoonTV</title>
-  <ref>wvt:///moontv.fi/mainmenu.xsl?srcurl=http%3A//moontv.fi/ohjelmat</ref>
+  <ref>wvt:///moontv.fi/mainmenu.xsl</ref>
   <description>Video service by MoonTV, a Finnish online video channel</description>
 </service>
