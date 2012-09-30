@@ -1,3 +1,9 @@
+vdr-plugin-webvideo (0.4.9-1) unstable; urgency=low
+
+  * Fixed support for Youtube
+
+ -- Antti Ajanki <antti.ajanki@iki.fi>  Sun, 30 Sep 2012 20:50:54 +0300
+
 vdr-plugin-webvideo (0.4.8-1) unstable; urgency=low
 
   * Fixed support for Youtube, Google Video, ruutu.fi, MoonTV
