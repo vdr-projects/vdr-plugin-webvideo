@@ -36,6 +36,13 @@
       </xsl:if>
     </xsl:for-each>
   </xsl:variable>
+  <xsl:variable name="signature">
+    <xsl:for-each select="str:tokenize(., '&amp;')">
+      <xsl:if test="starts-with(., 'sig=')">
+	<xsl:value-of select="str:decode-uri(substring-after(., 'sig='))"/>
+      </xsl:if>
+    </xsl:for-each>
+  </xsl:variable>
 
   <xsl:if test="$url">
     <url>
@@ -49,7 +56,7 @@
 	  </xsl:otherwise>
 	</xsl:choose>
       </xsl:attribute>
-      <xsl:value-of select="$url"/>
+      <xsl:value-of select="concat($url, '&amp;signature=', $signature)"/>
     </url>
   </xsl:if>
 </xsl:template>
