@@ -1,5 +1,5 @@
 CFLAGS=-O2 -g -Wall -I../libwebvi
-LDFLAGS=-L../libwebvi -Wl,-rpath=../libwebvi -lwebvi
+LDFLAGS+=-L../libwebvi -Wl,-rpath=../libwebvi -lwebvi
 
 .PHONY: all clean check test
 

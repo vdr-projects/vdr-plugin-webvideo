@@ -16,7 +16,7 @@ libwebvi.o: libwebvi.c libwebvi.h
 	$(CC) -fPIC -Wall -O2 -g $(CFLAGS) $(DEFINES) `python-config --cflags` -c -o libwebvi.o libwebvi.c
 
 $(LIBMINOR): libwebvi.o
-	$(CC) -shared -Wl,-soname,$(LIBSONAME) -Wl,--as-needed libwebvi.o `python-config --ldflags` -o $(LIBMINOR)
+	$(CC) -shared -Wl,-soname,$(LIBSONAME) -Wl,--as-needed libwebvi.o `python-config --ldflags` $(LDFLAGS) -o $(LIBMINOR)
 	ln -sf $(LIBMINOR) $(LIBSONAME)
 	ln -sf $(LIBSONAME) $(LIBNAME)
 
