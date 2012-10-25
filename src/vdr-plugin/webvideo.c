@@ -436,7 +436,7 @@ cString cPluginWebvideo::SVDRPCommand(const char *Command, const char *Option, i
     if(*Option) {
       debug("SVDRP(%s, %s)", Command, Option);
       cString twvtref = CreateWvtRef(Option);
-      if (twvtref != "") {
+      if (strcmp(twvtref, "") != 0) {
         cMenuRequest *req;
         if (strcasecmp(Command, "PLAY") == 0)
           req = new cStreamUrlRequest(0, twvtref);
@@ -460,7 +460,7 @@ cString cPluginWebvideo::SVDRPCommand(const char *Command, const char *Option, i
 
 cString cPluginWebvideo::CreateWvtRef(const char *url) {
   cString domain = parseDomain(url);
-  if (domain == "")
+  if (strcmp(domain, "") == 0)
     return "";
   
   char *encoded = URLencode(url);
