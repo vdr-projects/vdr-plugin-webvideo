@@ -81,7 +81,7 @@ class MenuItemTextField:
         return {self.name: self.value}
 
     def activate(self):
-        self.value = unicode(raw_input('%s> ' % self.label), sys.stdin.encoding)
+        self.value = unicode(raw_input('%s> ' % self.label), sys.stdin.encoding or 'utf-8')
         return None
 
 
