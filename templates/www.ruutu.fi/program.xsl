@@ -20,8 +20,8 @@
       <xsl:text> </xsl:text>
       <xsl:value-of select="normalize-space(.//div[contains(@class, 'field-name-field-episode')])"/>
     </label>
-    <ref>wvt:///www.ruutu.fi/description.xsl?srcurl=<xsl:value-of select="@about"/></ref>
-    <stream>wvt:///www.ruutu.fi/videopage.xsl?srcurl=<xsl:value-of select="@about"/></stream>
+    <ref>wvt:///www.ruutu.fi/description.xsl?srcurl=<xsl:value-of select=".//h2[@class='node-title']/a/@href"/></ref>
+    <stream>wvt:///www.ruutu.fi/videopage.xsl?srcurl=<xsl:value-of select=".//h2[@class='node-title']/a/@href"/></stream>
   </link>
 </xsl:template>
 
