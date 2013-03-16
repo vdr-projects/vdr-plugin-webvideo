@@ -16,13 +16,14 @@ Supported video sites:
 * Metacafe
 * MTV3 Katsomo
 * ruutu.fi [2]
-* YLE Areena [2]
+* YLE Areena [3]
 * YouTube
 
 [1] Only videos hosted by Google, YouTube, Metacafe
 
-[2] Requires rtmpdump-yle
-    (http://users.tkk.fi/~aajanki/rtmpdump-yle/index.html).
+[2] Requires rtmpdump: http://rtmpdump.mplayerhq.hu/
+
+[3] Requires yle-dl: http://aajanki.github.com/yle-dl/
 
 Known problems:
 
