@@ -1,13 +1,7 @@
 # prefix for non-VDR stuff
 PREFIX ?= /usr/local
-# VDR directory
-VDRDIR ?= /usr/src/vdr-1.6.0
-# VDR's library directory
-VDRPLUGINDIR ?= $(VDRDIR)/PLUGINS/lib
 # VDR's plugin conf directory
 VDRPLUGINCONFDIR ?= /video/plugins
-# VDR's locale directory
-VDRLOCALEDIR ?= $(VDRDIR)/locale
 
 VERSION := $(shell grep VERSION src/libwebvi/webvi/version.py | cut -d \' -f 2)
 
@@ -15,18 +9,15 @@ TMPDIR = /tmp
 ARCHIVE = webvideo-$(VERSION)
 PACKAGE = vdr-$(ARCHIVE)
 
-APIVERSION := $(shell sed -ne '/define APIVERSION/s/^.*"\(.*\)".*$$/\1/p' $(VDRDIR)/config.h 2> /dev/null)
-LIBDIR = $(VDRPLUGINDIR)
+# The following two commented lines cause the main VDR Makefile to
+# consider this as a plugin Makefile:
+#PKGCFG
+#$(LIBDIR)/$^.$(APIVERSION)
 
-# Default target compiles everything but does not install anything.
-all-noinstall: libwebvi vdr-plugin
-
-# This target is used by VDR's make plugins. It compiles everything
-# and installs VDR plugin.
-all: libwebvi vdr-plugin $(LIBDIR)/libvdr-webvideo.so.$(APIVERSION) webvi.conf
+all: libwebvi vdr-plugin
 
 vdr-plugin: libwebvi
-	$(MAKE) -C src/vdr-plugin LOCALEDIR=./locale LIBDIR=. VDRDIR=$(VDRDIR) CXXFLAGS="-fPIC -g -O2 -Wall -Woverloaded-virtual -Wno-parentheses $(CXXFLAGS)"
+	$(MAKE) -C src/vdr-plugin
 
 libwebvi: build-python
 	$(MAKE) -C src/libwebvi all libwebvi.a
@@ -37,20 +28,8 @@ build-python: webvi.conf
 webvi.conf webvi.plugin.conf: %.conf: examples/%.conf
 	sed 's_templatepath = /usr/local/share/webvi/templates_templatepath = $(PREFIX)/share/webvi/templates_g' < $< > $@
 
-$(DESTDIR)$(VDRPLUGINDIR)/libvdr-webvideo.so.$(APIVERSION): vdr-plugin
-ifeq ($(APIVERSION),)
-	@echo "No APIVERSION in $(VDRDIR)/config.h"
-	@exit 1
-else
-	mkdir -p $(DESTDIR)$(VDRPLUGINDIR)
-	cp -f src/vdr-plugin/libvdr-webvideo.so.$(APIVERSION) $(DESTDIR)$(VDRPLUGINDIR)/libvdr-webvideo.so.$(APIVERSION)
-endif
-
-install-vdr-plugin: $(DESTDIR)$(VDRPLUGINDIR)/libvdr-webvideo.so.$(APIVERSION)
-	mkdir -p $(DESTDIR)$(VDRLOCALEDIR)
-	cp -rf src/vdr-plugin/locale/* $(DESTDIR)$(VDRLOCALEDIR)
-	mkdir -p $(DESTDIR)$(VDRPLUGINCONFDIR)/webvideo
-	cp -f src/vdr-plugin/mime.types $(DESTDIR)$(VDRPLUGINCONFDIR)/webvideo
+install-vdr-plugin:
+	$(MAKE) -C src/vdr-plugin install
 
 install-libwebvi: libwebvi
 	$(MAKE) -C src/libwebvi install
