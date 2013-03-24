@@ -25,9 +25,9 @@ TMPDIR ?= /tmp
 
 ### The compiler options:
 
-override CFLAGS   += $(call PKGCFG,cflags) `xml2-config --cflags`
-override CXXFLAGS += $(call PKGCFG,cxxflags) `xml2-config --cflags`
-override LDFLAGS  += `xml2-config --libs` -L../libwebvi -lwebvi
+override CFLAGS   += $(call PKGCFG,cflags) $(shell xml2-config --cflags)
+override CXXFLAGS += $(call PKGCFG,cxxflags) $(shell xml2-config --cflags)
+override LDFLAGS  += $(shell xml2-config --libs) -L../libwebvi -lwebvi
 
 export CFLAGS
 export CXXFLAGS
@@ -106,7 +106,7 @@ install-i18n: $(I18Nmsgs)
 ### Targets:
 
 $(SOFILE): $(OBJS)
-	$(CXX) $(CXXFLAGS) $(LDFLAGS) -shared $(OBJS) -o $@
+	$(CXX) $(CXXFLAGS) -shared $(OBJS) $(LDFLAGS) -o $@
 
 install-lib: $(SOFILE)
 	install -D $^ $(DESTDIR)$(LIBDIR)/$^.$(APIVERSION)
