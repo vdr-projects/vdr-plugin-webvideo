@@ -18,7 +18,7 @@
 <wvmenu>
   <title>Kaikki sarjat</title>
 
-  <xsl:apply-templates select="//div[@class='has-episodes']/a"/>
+  <xsl:apply-templates select="//a[@class='has-episodes']"/>
 </wvmenu>
 </xsl:template>
 
