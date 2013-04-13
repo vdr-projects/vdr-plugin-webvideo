@@ -34,8 +34,6 @@
   </xsl:choose>
 </xsl:variable>
 
-<xsl:variable name="pid" select="substring-after($docurl, 'progId=')"/>
-
 <wvmenu>
   <title><xsl:value-of select="$title"/></title>
 
@@ -50,10 +48,10 @@
       </textarea>
     </xsl:when>
 
-    <xsl:when test="$pid">
+    <xsl:when test="$docurl">
       <link>
 	<label>Download this video</label>
-	<stream>wvt:///katsomo.fi/video.xsl?param=pid,<xsl:value-of select="$pid"/>&amp;param=title,<xsl:value-of select="str:encode-uri($title, true())"/></stream>
+	<stream>wvt:///katsomo.fi/video.xsl?param=videopage,<xsl:value-of select="str:encode-uri($docurl, true())"/>&amp;param=title,<xsl:value-of select="str:encode-uri($title, true())"/></stream>
       </link>
     </xsl:when>
   </xsl:choose>

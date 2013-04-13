@@ -18,5 +18,3 @@ Fix support for mplayer plugin
 Kill external downloader process when the player stops mid-stream
 
 youtube: webvi --url doesn't work. Workaround: youtube-dl
-
-katsomo.fi is broken

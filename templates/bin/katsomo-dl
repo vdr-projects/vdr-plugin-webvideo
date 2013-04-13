@@ -1,0 +1,42 @@
+#!/bin/sh
+
+# Downloads a video from katsomo.fi. The first parameter is the stream
+# URL, the optional second parameter is the output file.
+#
+# Because the main stream is Silverlight, which can't be downloaded,
+# get the mobile stream.
+
+if [ "x$1" = "x" ]; then
+    echo "Expected URL missing" 1>&2
+    exit 1
+fi
+
+OUTPUT_FILE="$2"
+if [ "x$OUTPUT_FILE" = "x" ]; then
+    OUTPUT_FILE="-"
+fi
+
+# Convert http://www.katsomo.fi/?progId=xxx URL into mobile site URL
+# and parse the stream URL from the HTML.
+
+MOBILE_PAGE=`echo ${1} | sed "s/www/m/"`
+STREAM_URL=`curl -A iPhone -L --max-redirs 10 $MOBILE_PAGE 2>/dev/null | grep "video\/mp4" | sed "s/<.*src=\"//" | sed "s/\"\/>//" | sed "s/^ *//g"`
+
+if [ "x$STREAM_URL" = "x" ]; then
+    echo "Failed to find the stream URL in $MOBILE_PAGE" 1>&2
+    exit 1
+fi
+
+# The STREAM_URL points to an m3u playlist, using avconv to download
+# the stream.
+
+if [ "x$OUTPUT_FILE" = "x-" -o -p "$OUTPUT_FILE" ]; then
+    # Transcode into a streamable format
+    avconv -y -i "$STREAM_URL" -f flv -vcodec libx264 -acodec libmp3lame -ab 192k -ar 22050 "$OUTPUT_FILE"
+else
+    # Would use -acodec copy, but due to a bug avconv sometimes fails
+    # with a non-monotonic timestamp error.
+    avconv -y -i "$STREAM_URL" -vcodec copy -acodec mp2 -ab 128k "$OUTPUT_FILE"
+fi
+
+exit $?

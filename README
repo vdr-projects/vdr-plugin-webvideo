@@ -14,21 +14,18 @@ Supported video sites:
 
 * Google Video [1]
 * Metacafe
-* MTV3 Katsomo
-* ruutu.fi [2]
-* YLE Areena [3]
+* MTV3 Katsomo [2]
+* ruutu.fi [3]
+* YLE Areena [4]
 * YouTube
 
 [1] Only videos hosted by Google, YouTube, Metacafe
 
-[2] Requires rtmpdump: http://rtmpdump.mplayerhq.hu/
+[2] Experimental, requires curl and avconv
 
-[3] Requires yle-dl: http://aajanki.github.com/yle-dl/
+[3] Requires rtmpdump: http://rtmpdump.mplayerhq.hu/
 
-Known problems:
-
-* MTV3 Katsomo: often the connection is lost before the video is fully
-  downloaded.
+[4] Requires yle-dl: http://aajanki.github.com/yle-dl/
 
 Because of the modular design it is possible to add support for new
 sites quite easily. See doc/developers.txt for more information.
