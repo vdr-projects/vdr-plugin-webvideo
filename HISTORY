@@ -1,6 +1,11 @@
 VDR Plugin 'webvideo' Revision History
 --------------------------------------
 
+2013-04-14: Version 0.5.0
+
+- Compatible with VDR 2.0.0. VDR 1.6.x support dropped.
+- Fixed ruutu.fi, katsomo.fi (low-quality mobile streams)
+
 2012-09-30: Version 0.4.9
 
 - Fixed support for Youtube
