@@ -1,0 +1,134 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: webvideo 0.5.0\n"
+"Report-Msgid-Bugs-To: <see README>\n"
+"POT-Creation-Date: 2013-05-19 00:52+0200\n"
+"PO-Revision-Date: 2013-05-19 00:42+0200\n"
+"Last-Translator: Yarema aka Knedlyk <yupadmin@gmail.com>\n"
+"Language-Team: <vdr@linuxtv.org>\n"
+"Language: Ukrainian\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+msgid "No streams on this page, create timer anyway?"
+msgstr "Немає потоку на цій сторінці, створити таймер все одно?"
+
+msgid "Downloading in the background"
+msgstr "Звантаження в тлі"
+
+msgid "Starting player..."
+msgstr "Запуск програвача..."
+
+msgid "Retrieving..."
+msgstr "Отримання..."
+
+msgid "Back"
+msgstr "Назад"
+
+msgid "Forward"
+msgstr "Вперед"
+
+msgid "Create timer"
+msgstr "Ств. таймер"
+
+msgid "Play"
+msgstr "Програвання"
+
+msgid "Status"
+msgstr "Статус"
+
+msgid "Timers"
+msgstr "Таймери"
+
+msgid "Unfinished downloads"
+msgstr "Незавершені звантаження"
+
+msgid "No active downloads"
+msgstr "Немає активних звантажень"
+
+#. TRANSLATORS: at most 5 characters
+msgid "Error"
+msgstr "Помилка"
+
+msgid "Error details"
+msgstr "Деталі помилки"
+
+msgid "Download details"
+msgstr "Деталі звантаження"
+
+msgid "Remove"
+msgstr "Вилучення"
+
+msgid "Abort"
+msgstr "Перервати"
+
+msgid "Edit timer"
+msgstr "Редагувати таймер"
+
+msgid "Title"
+msgstr "Назва"
+
+msgid "Once per day"
+msgstr "Раз на день"
+
+msgid "Once per week"
+msgstr "Раз на тиждень"
+
+msgid "Once per month"
+msgstr "Раз на місяць"
+
+msgid "Update interval"
+msgstr "Інтервал оновлення"
+
+msgid "Execute now"
+msgstr "Запустити вже"
+
+#. TRANSLATORS: at most 24 chars
+msgid "Never"
+msgstr "Ніколи"
+
+msgid "Last fetched:"
+msgstr "Востаннє отримані:"
+
+msgid "Error on last refresh!"
+msgstr "Помилка при останньому оновленні!"
+
+msgid "Timer running, can't remove"
+msgstr "Запущено таймер, неможливо вилучити!"
+
+msgid "Remove timer?"
+msgstr "Вилучити таймер?"
+
+msgid "Aborted"
+msgstr "Перервано"
+
+msgid "Download video files from the web"
+msgstr "Звантаження відео-файлів з мережі"
+
+msgid "Streaming failed: no URL"
+msgstr "Програвання потоку не вдалося: немає посилання"
+
+msgid "Streaming not supported, try downloading"
+msgstr "Програвання потоку не підтримується, спробуйте звантажити"
+
+msgid "Failed to launch media player"
+msgstr "Помилка запуску програвача медіа"
+
+msgid "timer"
+msgstr "таймер"
+
+#, c-format
+msgid "One download completed, %d remains%s"
+msgstr "Одне звантаження закінчено, %d залишилося%s"
+
+msgid "Download aborted"
+msgstr "Звантаження перервано"
+
+#, c-format
+msgid "Download failed (error = %d)"
+msgstr "Звантаження не вдалося (помилка = %d)"
+
+#, c-format
+msgid "%d downloads not finished"
+msgstr "%d звантажень не завершено"
