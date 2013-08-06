@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<wvmenu>
+  <title>YouTube</title>
+  <description>Video sharing service on which users worldwide can upload their videos</description>
+
+  <link>
+    <label>Search</label>
+    <ref>wvt:///www.youtube.com/search.xml</ref>
+  </link>
+
+  <link>
+    <label>Categories</label>
+    <ref>http://www.youtube.com/channels?feature=guide</ref>
+  </link>
+</wvmenu>

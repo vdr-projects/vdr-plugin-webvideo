@@ -1,0 +1,5 @@
+### Link configuration file for tests ###
+# Regular link
+http://example\.com/test/
+# Video link
+http://example.com/video/	bin:test_command

@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<wvmenu>
+  <title>Youtube Search</title>
+
+  <textfield name="q">
+    <label>Search terms</label>
+  </textfield>
+
+  <itemlist name="uploaded">
+    <label>Uploaded</label>
+    <item value="">Anytime</item>
+    <item value="d">Today</item>
+    <item value="w">This week</item>
+    <item value="m">This month</item>
+  </itemlist>
+
+  <itemlist name="duration">
+    <label>Duration</label>
+    <item value="">All</item>
+    <item value="short">Short</item>
+    <item value="long">Long</item>
+  </itemlist>
+
+  <button>
+    <label>Search</label>
+    <submission>http://www.youtube.com/results?search_query={q}&amp;oq={q}&amp;uploaded={uploaded}&amp;search_duration={duration}</submission>
+  </button>
+</wvmenu>

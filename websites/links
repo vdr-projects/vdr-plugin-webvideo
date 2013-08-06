@@ -1,0 +1,68 @@
+### Youtube ###
+
+# category
+http://www\.youtube\.com/channels/
+# channel
+http://www\.youtube\.com/channel/
+# user
+http://www\.youtube\.com/user/
+# search results
+http://www\.youtube\.com/results\?
+# video
+http://www\.youtube\.com/watch\?	stream:libquvi
+
+### Metacafe ###
+
+# category
+http://www\.metacafe\.com/videos/
+# search results
+###http://www\.metacafe\.com/topics/
+# video
+http://www\.metacafe\.com/watch/	stream:libquvi
+
+### www.ruutu.fi ###
+
+# series page
+http://www\.ruutu\.fi/ohjelmat/.+?/$
+# search results
+http://www\.ruutu\.fi/hakutulokset/
+# video
+http://www\.ruutu\.fi/ohjelmat/.+?/.+	stream:libquvi
+
+### Vimeo ###
+
+# channel
+http://vimeo\.com/channels/.+?/videos
+# category
+http://vimeo\.com/categories/[^/]+$
+# group
+http://vimeo\.com/groups/[^/]+$
+# user
+http://vimeo.com/[a-zA-Z][a-zA-Z0-9]+$
+# video
+http://vimeo\.com/[0-9]+$	stream:libquvi
+http://vimeo\.com/.*/[0-9]+$	stream:libquvi
+
+### Dailymotion ###
+
+# channel
+http://www.dailymotion.com/en/channel/
+http://www.dailymotion.com/channel/
+# video
+http://www.dailymotion.com/video/	stream:libquvi
+
+
+### imdb ###
+
+# video
+http://www.imdb.com/video/	stream:libquvi
+
+
+### areena.yle.fi ###
+
+# category
+http://areena\.yle\.fi/(?:tv|radio)/?.*/kaikki.json?	bin:areena-category.py
+# search results
+http://areena.yle.fi/.json	bin:areena-category.py
+# video
+http://areena\.yle\.fi/(?:tv|radio)/[0-9]+$	stream:yle-dl

@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<wvmenu>
+  <title>Metacafe</title>
+  <description>We’re the first and only entertainment destination solely dedicated to showcasing the best short-form videos from the world of Movies, Video Games, TV, Music and Sports – programmed for today’s young male Entertainment Drivers.</description>
+
+  <ul>
+    <li><a href="http://www.metacafe.com/videos/" class="webvi">Categories</a></li>
+  </ul>
+</wvmenu>

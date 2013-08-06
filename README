@@ -1,0 +1,41 @@
+Written by:                  Antti Ajanki <antti.ajanki@iki.fi>
+Project's homepage:          http://users.tkk.fi/~aajanki/vdr/webvideo
+
+Webvi is a tool for downloading and playing videos from popular video
+sharing websites such as YouTube. There are two interfaces: a plugin
+for Video Disk Recorder (VDR), and a command line client. The two
+interfaces are described in README.vdrplugin and README.webvi.
+
+The common functionality of the VDR plugin and the command line client
+is implemented in a Python library (src/libwebvi/webvi). C bindings
+for the library are also provided (see src/libwebvi/libwebvi.h).
+
+Supported video sites:
+
+* Google Video [1]
+* Metacafe
+* MTV3 Katsomo [2]
+* ruutu.fi [3]
+* YLE Areena [4]
+* YouTube
+
+[1] Only videos hosted by Google, YouTube, Metacafe
+
+[2] Experimental, requires curl and avconv
+
+[3] Requires rtmpdump: http://rtmpdump.mplayerhq.hu/
+
+[4] Requires yle-dl: http://aajanki.github.com/yle-dl/
+
+Because of the modular design it is possible to add support for new
+sites quite easily. See doc/developers.txt for more information.
+
+License:
+
+This program is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation; either version 3 of the License, or (at
+your option) any later version. The project includes files from
+iniparse library under MIT license.
+
+See the file COPYING for more information.
