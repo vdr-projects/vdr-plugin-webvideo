@@ -46,6 +46,7 @@ struct PipeCallbackWrapper {
 
 struct PipeMainMenuDownloader {
   PipeComponent pipe_data;
+  int kickstart_fd;
   const WebviContext *context; /* borrowed reference */
 };
 
@@ -85,6 +86,13 @@ static void pipe_downloader_finished(PipeComponent *instance, RequestState state
 static void pipe_downloader_delete(PipeComponent *instance);
 static size_t curl_write_wrapper(char *ptr, size_t size, size_t nmemb, void *userdata);
 
+static void pipe_mainmenu_downloader_fdset(PipeComponent *instance, 
+                                           fd_set *readfd,
+                                           fd_set *writefd,
+                                           fd_set *excfd,
+                                           int *maxfd);
+static gboolean pipe_mainmenu_downloader_handle_socket(PipeComponent *instance,
+                                                       int fd, int bitmask);
 static void pipe_mainmenu_downloader_delete(PipeComponent *instance);
 
 static void pipe_local_file_fdset(PipeComponent *instance, fd_set *readfd,
@@ -314,9 +322,12 @@ void pipe_downloader_delete(PipeComponent *instance) {
 
 
 PipeMainMenuDownloader *pipe_mainmenu_downloader_create(WebviContext *context) {
-  INITIALIZE_PIPE(PipeMainMenuDownloader, NULL, NULL,
-                  pipe_mainmenu_downloader_delete);
+  INITIALIZE_PIPE_WITH_FDSET(PipeMainMenuDownloader, NULL, NULL,
+                             pipe_mainmenu_downloader_delete,
+                             pipe_mainmenu_downloader_fdset,
+                             pipe_mainmenu_downloader_handle_socket);
   self->context = context;
+  self->kickstart_fd = -1;
   return self;
 }
 
@@ -330,11 +341,44 @@ void pipe_mainmenu_downloader_start(PipeMainMenuDownloader *self) {
   pipe_component_append(&self->pipe_data, mainmenu, strlen(mainmenu));
   pipe_component_finished(&self->pipe_data, WEBVISTATE_FINISHED_OK);
 
+  /* To kickstart downloading, create a fake read event for the client
+   * so that select returns immediately instead of waiting until the
+   * timeout. */
+  int pipefd[2];
+  if (pipe(pipefd) != -1) {
+    write(pipefd[1], "*", 1);
+    close(pipefd[1]);
+    self->kickstart_fd = pipefd[0];
+  }
+
   g_free(mainmenu);
+}
+
+void pipe_mainmenu_downloader_fdset(PipeComponent *instance, fd_set *readfd,
+                                    fd_set *writefd, fd_set *excfd, int *maxfd)
+{
+  PipeMainMenuDownloader *self = (PipeMainMenuDownloader *)instance;
+  append_to_fdset(self->kickstart_fd, readfd, maxfd);
+}
+
+gboolean pipe_mainmenu_downloader_handle_socket(PipeComponent *instance,
+                                                int fd, int bitmask)
+{
+  PipeMainMenuDownloader *self = (PipeMainMenuDownloader *)instance;
+  char buf;
+  if (self->kickstart_fd != -1) {
+    read(self->kickstart_fd, &buf, 1);
+    close(self->kickstart_fd);
+    self->kickstart_fd = -1;
+  }
+  return TRUE;
 }
 
 void pipe_mainmenu_downloader_delete(PipeComponent *instance) {
   PipeMainMenuDownloader *self = (PipeMainMenuDownloader *)instance;
+  if (self->kickstart_fd != -1) {
+    close(self->kickstart_fd);
+  }
   free(self);
 }
 
