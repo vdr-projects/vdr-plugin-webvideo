@@ -93,7 +93,7 @@ def dl_progress(count, blockSize, totalSize):
     if totalSize == -1:
         return
     percent = int(count*blockSize*100/totalSize)
-    sys.stdout.write("\r%d% %" % percent)
+    sys.stdout.write("\r%d %%" % percent)
     sys.stdout.flush()
 
 def next_available_file_name(basename, ext):
