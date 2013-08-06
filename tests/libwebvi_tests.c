@@ -45,6 +45,10 @@ int main(int argc, char** argv)
              link_extractor_fixture_setup,
              test_link_extractor_title_overrides_content,
              link_extractor_fixture_teardown);
+  g_test_add("/linkextractor/html_title", LinkExtractorFixture, 0,
+             link_extractor_fixture_setup,
+             test_link_extractor_remove_duplicates,
+             link_extractor_fixture_teardown);
 
   g_test_add_func("/menubuilder/mainmenu", test_mainmenu);
   g_test_add("/menubuilder/title", MenuBuilderFixture, 0,

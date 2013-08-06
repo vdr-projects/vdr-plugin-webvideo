@@ -44,6 +44,17 @@
   "<a href=\"" HTML6_HREF "\" title=\"" HTML6_TITLE "\">ignored</a>" \
   "</body></html>"
 
+#define HTML_DUPLICATE_HREF1 "http://example.com/test/1"
+#define HTML_DUPLICATE_TITLE1 "First link"
+#define HTML_DUPLICATE_HREF2 "http://example.com/test/2"
+#define HTML_DUPLICATE_TITLE2 "Second link"
+#define HTML_DUPLICATE_LINKS "<html><body>" \
+  "<a href=\"" HTML_DUPLICATE_HREF1 "\">d1</a>" \
+  "<a href=\"" HTML_DUPLICATE_HREF1 "\">" HTML_DUPLICATE_TITLE1 "</a>" \
+  "<a href=\"" HTML_DUPLICATE_HREF2 "\">" HTML_DUPLICATE_TITLE2 "</a>" \
+  "<a href=\"" HTML_DUPLICATE_HREF2 "\">d2</a>" \
+  "</body></html>"
+
 
 void link_extractor_fixture_setup(LinkExtractorFixture *fixture,
                                   gconstpointer test_data) {
@@ -173,5 +184,36 @@ void test_link_extractor_title_overrides_content(
   const char *title = link_get_title(link);
   g_assert(title);
   g_assert(strcmp(title, HTML6_TITLE) == 0);
+  g_ptr_array_free(links, TRUE);
+}
+
+void test_link_extractor_remove_duplicates(LinkExtractorFixture *fixture,
+                                           gconstpointer test_data)
+{
+  link_extractor_append(fixture->extractor, HTML_DUPLICATE_LINKS,
+                        strlen(HTML_DUPLICATE_LINKS));
+  GPtrArray *links = link_extractor_get_links(fixture->extractor);
+  g_assert(links);
+  g_assert(links->len == 2);
+
+  const struct Link *link;
+  const char *href;
+  const char *title;
+  link = g_ptr_array_index(links, 0);
+  href = link_get_href(link);
+  g_assert(href);
+  g_assert(strcmp(href, HTML_DUPLICATE_HREF1) == 0);
+  title = link_get_title(link);
+  g_assert(title);
+  g_assert(strcmp(title, HTML_DUPLICATE_TITLE1) == 0);
+
+  link = g_ptr_array_index(links, 1);
+  href = link_get_href(link);
+  g_assert(href);
+  g_assert(strcmp(href, HTML_DUPLICATE_HREF2) == 0);
+  title = link_get_title(link);
+  g_assert(title);
+  g_assert(strcmp(title, HTML_DUPLICATE_TITLE2) == 0);
+
   g_ptr_array_free(links, TRUE);
 }

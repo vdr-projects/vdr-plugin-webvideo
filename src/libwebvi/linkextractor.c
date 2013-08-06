@@ -27,6 +27,8 @@ static void get_links_recursively(TidyDoc tdoc,
                                   GPtrArray *links_found);
 static gchar *parse_link_title(TidyDoc tdoc, TidyNode node);
 static void get_text_content(TidyDoc tdoc, TidyNode node, TidyBuffer* buf);
+static void remove_duplicate_urls(GPtrArray *links);
+static void insert_links_with_longest_titles(gpointer data, gpointer userdata);
 
 LinkExtractor *link_extractor_create(const LinkTemplates *link_templates, const gchar *baseurl) {
   LinkExtractor *extractor;
@@ -67,6 +69,7 @@ GPtrArray *link_extractor_get_links(LinkExtractor *self) {
     err = tidyCleanAndRepair(tdoc);
     if ( err >= 0 ) {
       links = extract_links(self, tdoc);
+      remove_duplicate_urls(links);
     }
   }
 
@@ -144,6 +147,52 @@ void get_text_content(TidyDoc tdoc, TidyNode node, TidyBuffer* buf) {
     for (child = tidyGetChild(node); child; child = tidyGetNext(child)) {
       get_text_content(tdoc, child, buf);
     }
+  }
+}
+
+void remove_duplicate_urls(GPtrArray *links) {
+  /* Remove links with duplicated URLs. Keep the link with the longest
+   * title on the assumption that it is more informative. Keep the
+   * sort order. */
+
+  if (links->len <= 1)
+    return;
+
+  /* seen_urls maps an href (char *) to Link * which has the longest
+   * title. Both keys and values are borrowed references!
+   */
+  GHashTable *seen_urls = g_hash_table_new(g_str_hash, g_str_equal);
+  g_ptr_array_foreach(links, insert_links_with_longest_titles, seen_urls);
+
+  /* Delete links which are not in the hash table */
+  int i = 0;
+  while (i < links->len) {
+    Link *link = g_ptr_array_index(links, i);
+    const char *href = link_get_href(link);
+    Link *link_with_longest_title =
+      (Link *)g_hash_table_lookup(seen_urls, href);
+
+    if (link == link_with_longest_title) {
+      i++;
+    } else {
+      g_ptr_array_remove_index(links, i);
+    }
+  }
+
+  g_hash_table_unref(seen_urls);
+}
+
+void insert_links_with_longest_titles(gpointer data, gpointer userdata) {
+  Link *link = (Link *)data;
+  GHashTable *hashtable = (GHashTable *)userdata;
+  int title_len = strlen(link_get_title(link));
+  const char *href = link_get_href(link);
+  Link *prev_link = (Link *)g_hash_table_lookup(hashtable, href);
+  int prev_link_title_len = 0;
+  if (prev_link)
+    prev_link_title_len = strlen(link_get_title(prev_link));
+  if (!prev_link || (prev_link_title_len < title_len)) {
+    g_hash_table_replace(hashtable, (gpointer)href, (gpointer)link);
   }
 }
 
