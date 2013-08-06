@@ -38,6 +38,12 @@
   "<a href=\"" HTML5_HREF "\"><span><b>   Test</b></span> <span>link</span></a>" \
   "</body></html>"
 
+#define HTML6_HREF "http://example.com/test/link"
+#define HTML6_TITLE "Test link"
+#define HTML6 "<html><body>" \
+  "<a href=\"" HTML6_HREF "\" title=\"" HTML6_TITLE "\">ignored</a>" \
+  "</body></html>"
+
 
 void link_extractor_fixture_setup(LinkExtractorFixture *fixture,
                                   gconstpointer test_data) {
@@ -152,7 +158,20 @@ void test_link_extractor_html_title(LinkExtractorFixture *fixture,
   g_ptr_array_free(links, TRUE);
 }
 
-void test_link_extractor_xml(LinkExtractorFixture *fixture,
-                             gconstpointer test_data) {
-
+void test_link_extractor_title_overrides_content(
+  LinkExtractorFixture *fixture, G_GNUC_UNUSED gconstpointer test_data)
+{
+  GPtrArray *links;
+  link_extractor_append(fixture->extractor, HTML6, strlen(HTML6));
+  links = link_extractor_get_links(fixture->extractor);
+  g_assert(links);
+  g_assert(links->len == 1);
+  const struct Link *link = g_ptr_array_index(links, 0);
+  const char *href = link_get_href(link);
+  g_assert(href);
+  g_assert(strcmp(href, HTML6_HREF) == 0);
+  const char *title = link_get_title(link);
+  g_assert(title);
+  g_assert(strcmp(title, HTML6_TITLE) == 0);
+  g_ptr_array_free(links, TRUE);
 }

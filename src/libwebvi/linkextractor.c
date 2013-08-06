@@ -25,7 +25,8 @@ static void get_links_recursively(TidyDoc tdoc,
                                   const LinkTemplates *link_templates,
                                   const gchar *baseurl,
                                   GPtrArray *links_found);
-static void getTextContent(TidyDoc tdoc, TidyNode node, TidyBuffer* buf);
+static gchar *parse_link_title(TidyDoc tdoc, TidyNode node);
+static void get_text_content(TidyDoc tdoc, TidyNode node, TidyBuffer* buf);
 
 LinkExtractor *link_extractor_create(const LinkTemplates *link_templates, const gchar *baseurl) {
   LinkExtractor *extractor;
@@ -96,17 +97,11 @@ void get_links_recursively(TidyDoc tdoc, TidyNode node,
         const LinkAction *action = \
           link_templates_get_action(link_templates, absolute_href);
         if (action) {
-          TidyBuffer titlebuf;
-          tidyBufInit(&titlebuf);
-          getTextContent(tdoc, child, &titlebuf);
-          tidyBufPutByte(&titlebuf, '\0');
-          gchar *title = g_strdup((const gchar*)titlebuf.bp);
-          g_strstrip(title);
           LinkActionType type = link_action_get_type(action);
+          gchar *title = parse_link_title(tdoc, child);
           Link *link = link_create(absolute_href, title, type);
           g_ptr_array_add(links_found, link);
           g_free(title);
-          tidyBufFree(&titlebuf);
         }
         g_free(absolute_href);
       }
@@ -119,7 +114,26 @@ void get_links_recursively(TidyDoc tdoc, TidyNode node,
   }
 }
 
-void getTextContent(TidyDoc tdoc, TidyNode node, TidyBuffer* buf) {
+gchar *parse_link_title(TidyDoc tdoc, TidyNode node) {
+  gchar *title;
+  TidyAttr title_attr = tidyAttrGetById(node, TidyAttr_TITLE);
+  if (title_attr) {
+    ctmbstr tidy_title = tidyAttrValue(title_attr);
+    title = g_strdup(tidy_title);
+  } else {
+    TidyBuffer titlebuf;
+    tidyBufInit(&titlebuf);
+    get_text_content(tdoc, node, &titlebuf);
+    tidyBufPutByte(&titlebuf, '\0');
+    title = g_strdup((const gchar*)titlebuf.bp);
+    tidyBufFree(&titlebuf);
+  }
+
+  g_strstrip(title);
+  return title;
+}
+
+void get_text_content(TidyDoc tdoc, TidyNode node, TidyBuffer* buf) {
   if (tidyNodeGetType(node) == TidyNode_Text) {
     TidyBuffer content;
     tidyBufInit(&content);
@@ -128,7 +142,7 @@ void getTextContent(TidyDoc tdoc, TidyNode node, TidyBuffer* buf) {
   } else {
     TidyNode child;
     for (child = tidyGetChild(node); child; child = tidyGetNext(child)) {
-      getTextContent(tdoc, child, buf);
+      get_text_content(tdoc, child, buf);
     }
   }
 }

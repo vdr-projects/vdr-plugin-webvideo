@@ -25,10 +25,8 @@ void test_link_extractor_invalid_html(LinkExtractorFixture *fixture,
 void test_link_extractor_relative_urls(LinkExtractorFixture *fixture,
                                        gconstpointer test_data);
 void test_link_extractor_html_title(LinkExtractorFixture *fixture,
-                                    G_GNUC_UNUSED gconstpointer test_data);
- 
-void test_link_extractor_xml(LinkExtractorFixture *fixture,
-                             gconstpointer test_data);
-
-
+                                    gconstpointer test_data);
+void test_link_extractor_title_overrides_content(LinkExtractorFixture *fixture,
+                                                 gconstpointer test_data);
+  
 #endif // LINK_EXTRACTOR_TESTS_H
