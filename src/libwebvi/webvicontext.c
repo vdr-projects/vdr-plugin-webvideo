@@ -14,6 +14,8 @@ struct WebviContext {
   WebviHandle next_request;
   CURLM *curl_multi_handle;
   gchar *template_path;
+  webvi_timeout_callback timeout_callback;
+  void *timeout_data;
   GArray *finish_messages;
   /* The value returned by the latest webvi_context_next_message() call */
   WebviMsg current_message;
@@ -49,6 +51,7 @@ static RequestState curl_code_to_pipe_state(CURLcode curlcode);
 static WebviResult curlmcode_to_webvierr(CURLMcode mcode);
 static void webvi_log_handler(const gchar *log_domain, GLogLevelFlags log_level,
                               const gchar *message, gpointer user_data);
+static int curl_timeout_wrapper(CURLM* curlmulti, long timeout_ms, void *userdata);
 static void register_context(WebviCtx key, WebviContext *value);
 static GTree *get_tls_contexts();
 static void webvi_context_delete(WebviContext *ctx);
@@ -161,9 +164,33 @@ void webvi_context_remove_request(WebviContext *self, WebviHandle h) {
 }
 
 CURLM *webvi_context_get_curl_multi_handle(WebviContext *self) {
-  if (!self->curl_multi_handle)
+  if (!self->curl_multi_handle) {
     self->curl_multi_handle = curl_multi_init();
+    curl_multi_setopt(self->curl_multi_handle, CURLMOPT_TIMERFUNCTION,
+                      curl_timeout_wrapper);
+    curl_multi_setopt(self->curl_multi_handle, CURLMOPT_TIMERDATA, self);
+  }
   return self->curl_multi_handle;
+}
+
+int curl_timeout_wrapper(CURLM* curlmulti, long timeout_ms, void *userdata)
+{
+  WebviContext *ctx = (WebviContext *)userdata;
+  if (ctx->timeout_callback) {
+    ctx->timeout_callback(timeout_ms, ctx->timeout_data);
+  }
+
+  return 0;
+}
+
+void webvi_context_set_timeout_callback(WebviContext *ctx,
+                                        webvi_timeout_callback callback)
+{
+  ctx->timeout_callback = callback;
+}
+
+void webvi_context_set_timeout_data(WebviContext *ctx, void *data) {
+  ctx->timeout_data = data;
 }
 
 WebviCtx handle_for_context(WebviContext *ctx) {

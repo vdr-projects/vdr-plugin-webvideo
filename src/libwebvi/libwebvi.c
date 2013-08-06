@@ -90,13 +90,17 @@ WebviResult webvi_set_config(WebviCtx ctxhandle, WebviConfig conf, ...) {
     webvi_context_set_debug(ctx, strcmp(p, "0") != 0);
     break;
   case WEBVI_CONFIG_TIMEOUT_CALLBACK:
-    // FIXME
-    // va_arg(argptr, long)
+  {
+    webvi_timeout_callback callback = va_arg(argptr, webvi_timeout_callback);
+    webvi_context_set_timeout_callback(ctx, callback);
     break;
+  }
   case WEBVI_CONFIG_TIMEOUT_DATA:
-    // FIXME
-    // va_arg(argptr, long)
+  {
+    void *data = va_arg(argptr, void *);
+    webvi_context_set_timeout_data(ctx, data);
     break;
+  }
   default:
     res = WEBVIERR_INVALID_PARAMETER;
   };

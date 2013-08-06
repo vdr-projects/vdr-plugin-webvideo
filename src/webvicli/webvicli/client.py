@@ -236,7 +236,7 @@ class WVClient:
     def set_template_path(self, path):
         self.webvi.set_template_path(path)
         
-    def update_timeout(self, timeout_ms, data):
+    def update_timeout(self, timeout_ms):
         if timeout_ms < 0:
             self.alarm = None
         else:
