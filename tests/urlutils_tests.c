@@ -29,6 +29,13 @@ void test_url_scheme_invalid_characters() {
   g_free(prefix);
 }
 
+void test_url_scheme_mailto() {
+  gchar *prefix = url_scheme("mailto:john.doe@example.com");
+  g_assert(prefix);
+  g_assert(strcmp(prefix, "mailto") == 0);
+  g_free(prefix);
+}
+
 void test_url_root() {
   gchar *prefix = url_root("http://example.com/");
   g_assert(prefix);
@@ -223,5 +230,13 @@ void test_url_rel2abs_scheme() {
                                         "//server.org/path2/file2");
   g_assert(abs);
   g_assert(strcmp(abs, "http://server.org/path2/file2") == 0);
+  g_free(abs);
+}
+
+void test_url_rel2abs_mailto_scheme() {
+  gchar *abs = relative_url_to_absolute("http://example.com/index.html",
+                                        "mailto:john.doe@example.com");
+  g_assert(abs);
+  g_assert(strcmp(abs, "mailto:john.doe@example.com") == 0);
   g_free(abs);
 }

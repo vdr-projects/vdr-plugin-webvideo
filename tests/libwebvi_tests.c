@@ -76,6 +76,7 @@ int main(int argc, char** argv)
   g_test_add_func("/urlutils/scheme_double", test_url_scheme_double_scheme);
   g_test_add_func("/urlutils/scheme_invalid_characters",
                   test_url_scheme_invalid_characters);
+  g_test_add_func("/urlutils/scheme_mailto", test_url_scheme_mailto);
   g_test_add_func("/urlutils/root", test_url_root);
   g_test_add_func("/urlutils/root_path", test_url_root_full_path);
   g_test_add_func("/urlutils/root_query", test_url_root_terminated_by_query);
@@ -109,6 +110,7 @@ int main(int argc, char** argv)
   g_test_add_func("/urlutils/rel2abs_append_fragment",
                   test_url_rel2abs_append_fragment);
   g_test_add_func("/urlutils/rel2abs_scheme", test_url_rel2abs_scheme);
+  g_test_add_func("/urlutils/rel2abs_mailto", test_url_rel2abs_mailto_scheme);
 
   return g_test_run();
 }

@@ -3,11 +3,15 @@
 
 static const gchar *skip_scheme(const char *url);
 static gboolean is_scheme_character(gchar c);
+static gboolean has_scheme(const gchar *url);
 
 gchar *relative_url_to_absolute(const gchar *baseurl, const gchar *href) {
   gchar *absolute;
   gchar *prefix;
   const gchar *postfix = href;
+  if (!href || !baseurl)
+    return NULL;
+
   if ((href[0] == '/') && (href[1] == '/')) {
     gchar *scheme = url_scheme(baseurl);
     prefix = g_strconcat(scheme, ":", NULL);
@@ -21,7 +25,7 @@ gchar *relative_url_to_absolute(const gchar *baseurl, const gchar *href) {
     prefix = url_path_including_file(baseurl);
   } else if (href[0] =='#') {
     prefix = url_path_and_query(baseurl);
-  } else if (strstr(href, "://") == NULL) {
+  } else if (!has_scheme(href)) {
     prefix = url_path_dirname(baseurl);
   } else {
     // href is absolute
@@ -44,13 +48,19 @@ gchar *url_scheme(const gchar *url) {
 
   const gchar *scheme_end = skip_scheme(url);
   if (scheme_end == url) {
-    // no scheme
+    /* no scheme */
     return g_strdup("");
   } else {
-    // scheme found
-    // Do not include :// in the return value
-    g_assert(scheme_end >= url+3);
-    return g_strndup(url, scheme_end-3 - url);
+    /* scheme found */
+    /* Do not include the scheme postfix, which is either :// or : */
+    int scheme_postfix_len;
+    if ((scheme_end >= url+3) && (strncmp(scheme_end-3, "://", 3) == 0)) {
+      scheme_postfix_len = 3;
+    } else {
+      g_assert((scheme_end >= url+1) && (scheme_end[-1] == ':'));
+      scheme_postfix_len = 1;
+    }
+    return g_strndup(url, scheme_end - scheme_postfix_len - url);
   }
 }
 
@@ -112,6 +122,10 @@ gchar *url_path_and_query(const gchar *url) {
   return g_strndup(url, end - url);
 }
 
+gboolean has_scheme(const gchar *url) {
+  return skip_scheme(url) != url;
+}
+
 const gchar *skip_scheme(const char *url) {
   const gchar *c = url;
   while (is_scheme_character(*c)) {
@@ -121,6 +135,9 @@ const gchar *skip_scheme(const char *url) {
   if (strncmp(c, "://", 3) == 0) {
     // scheme found
     return c + 3;
+  } else if (c[0] == ':') {
+    // scheme without // such as mailto:
+    return c + 1;
   } else {
     // schemeless url
     return url;
