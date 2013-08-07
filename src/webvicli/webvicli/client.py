@@ -39,6 +39,7 @@ from StringIO import StringIO
 from . import menu
 
 VERSION = '0.5.0'
+WEBVI_STREAM_USER_AGENT = "Mozilla/5.0"
 
 # Default options
 DEFAULT_PLAYERS = ['mplayer -cache-min 10 "%s"',
@@ -104,6 +105,12 @@ def next_available_file_name(basename, ext):
     while os.path.exists('%s-%d%s' % (basename, i, ext)):
         i += 1
     return '%s-%d%s' % (basename, i, ext)
+
+
+class WebviURLopener(urllib.FancyURLopener):
+    version = WEBVI_STREAM_USER_AGENT
+urllib._urlopener = WebviURLopener()
+
 
 class StringIOCallback(StringIO):
     def write_and_return_length(self, buf):
