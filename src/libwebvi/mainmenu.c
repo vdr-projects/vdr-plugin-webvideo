@@ -8,7 +8,8 @@
 
 static GPtrArray *load_websites(const char *path);
 static gint title_cmp(gconstpointer a, gconstpointer b);
-static gchar *get_site_title(gchar *sitemenu, gsize sitemenu_len);
+static gchar *get_site_title(xmlDocPtr doc);
+static gchar *get_site_href(xmlDocPtr doc, const gchar *filename);
 
 char *build_mainmenu(const char *path) {
   g_log(LIBWEBVI_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "building main menu %s", path);
@@ -47,22 +48,26 @@ GPtrArray *load_websites(const char *path) {
     if (g_file_test(menudir, G_FILE_TEST_IS_DIR)) {
       gchar *menufile = g_strconcat(menudir, "/menu.xml", NULL);
 
-      g_log(LIBWEBVI_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "processing website menu %s", menufile);
+      g_log(LIBWEBVI_LOG_DOMAIN, G_LOG_LEVEL_DEBUG,
+            "processing website menu %s", menufile);
 
       gchar *sitemenu = NULL;
       gsize sitemenu_len;
       if (g_file_get_contents(menufile, &sitemenu, &sitemenu_len, NULL)) {
-        gchar *title = get_site_title(sitemenu, sitemenu_len);
+        xmlDocPtr doc = xmlReadMemory(sitemenu, sitemenu_len, menufile, NULL,
+                                      XML_PARSE_NOWARNING | XML_PARSE_NONET);
+        gchar *href = get_site_href(doc, menufile);
+        gchar *title = get_site_title(doc);
         if (!title) {
           title = g_strdup(dirname);
         }
 
-        gchar *href = g_strconcat("wvt://", menufile, NULL);
         Link *menuitem = link_create(href, title, LINK_ACTION_PARSE);
         g_ptr_array_add(websites, menuitem);
         g_free(href);
         g_free(title);
         g_free(sitemenu);
+        xmlFreeDoc(doc);
       }
 
       g_free(menufile);
@@ -87,13 +92,9 @@ gint title_cmp(gconstpointer a, gconstpointer b) {
                             link_get_title(link2));
 }
 
-/*
- * Parse the contents of website menu.xml and return site's title.
- */
-gchar *get_site_title(gchar *menuxml, gsize menuxml_len) {
+/* Get site's title from menu.xml document. */
+gchar *get_site_title(xmlDocPtr doc) {
   gchar *title = NULL;
-  xmlDocPtr doc = xmlReadMemory(menuxml, menuxml_len, "", NULL,
-                                XML_PARSE_NOWARNING | XML_PARSE_NONET);
   if (!doc)
     return NULL;
 
@@ -106,7 +107,6 @@ gchar *get_site_title(gchar *menuxml, gsize menuxml_len) {
       if (xmltitle) {
         title = g_strdup((gchar *)xmltitle);
         xmlFree(xmltitle);
-
         break;
       }
     }
@@ -114,7 +114,39 @@ gchar *get_site_title(gchar *menuxml, gsize menuxml_len) {
     node = node->next;
   }
 
-  xmlFreeDoc(doc);
-
   return title;
+}
+
+/* Get <redirection> from menu.xml or build href from menu file name. */
+gchar *get_site_href(xmlDocPtr doc, const gchar *filename) {
+  gchar *href = NULL;
+
+  if (doc) {
+    xmlNode *root = xmlDocGetRootElement(doc);
+    xmlNode *node = root->children;
+    while (node) {
+      if (xmlStrEqual(node->name, BAD_CAST "redirect")) {
+        xmlChar *xmlhref = xmlNodeGetContent(node);
+        if (xmlhref) {
+          href = g_strdup((char *)xmlhref);
+          xmlFree(xmlhref);
+          break;
+        }
+      }
+      node = node->next;
+    }
+  }
+
+  if (!href && filename) {
+    href = g_strconcat("wvt://", filename, NULL);
+  }
+
+  g_assert(href);
+  if (!href) {
+    g_log(LIBWEBVI_LOG_DOMAIN, G_LOG_LEVEL_WARNING,
+          "Could not get href for menu %s", filename);
+    href = g_strdup("");
+  }
+
+  return href;
 }
