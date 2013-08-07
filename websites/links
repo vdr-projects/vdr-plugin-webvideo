@@ -39,8 +39,6 @@ http://vimeo\.com/channels/.+?/videos
 http://vimeo\.com/categories/[^/]+$
 # group
 http://vimeo\.com/groups/[^/]+$
-# user
-http://vimeo.com/[a-zA-Z][a-zA-Z0-9]+$
 # video
 http://vimeo\.com/[0-9]+$	stream:libquvi
 http://vimeo\.com/.*/[0-9]+$	stream:libquvi
@@ -48,17 +46,15 @@ http://vimeo\.com/.*/[0-9]+$	stream:libquvi
 ### Dailymotion ###
 
 # channel
-http://www.dailymotion.com/en/channel/
-http://www.dailymotion.com/channel/
+http://www\.dailymotion\.com/en/channel/
+http://www\.dailymotion\.com/channel/
 # video
-http://www.dailymotion.com/video/	stream:libquvi
-
+http://www\.dailymotion\.com/video/	stream:libquvi
 
 ### imdb ###
 
 # video
-http://www.imdb.com/video/	stream:libquvi
-
+http://www\.imdb\.com/video/	stream:libquvi
 
 ### areena.yle.fi ###
 
@@ -68,3 +64,36 @@ http://areena\.yle\.fi/(?:tv|radio)/?.*/kaikki.json?	bin:areena-category.py
 http://areena.yle.fi/.json	bin:areena-category.py
 # video
 http://areena\.yle\.fi/(?:tv|radio)/[0-9]+$	stream:yle-dl
+
+### ted.com ###
+
+# topics
+http://www\.ted\.com/topics
+# playlists
+http://www\.ted\.com/playlists
+# video
+http://www\.ted\.com/talks/	stream:libquvi
+
+### funnyordie.com ###
+
+http://www\.funnyordie\.com/videos/[0-9a-f]{10}/	stream:libquvi
+
+### videobash.com ###
+
+http://www\.videobash\.com/video_show/	stream:libquvi
+http://www\.videobash\.com/videos/
+
+### wimp.com ###
+
+http://www\.wimp\.com/.	stream:libquvi
+
+### 101greatgoals.com ###
+
+http://www\.101greatgoals\.com/gvideos/	stream:libquvi
+
+### gaskrank.tv ###
+
+http://www\.gaskrank\.tv/tv/[^/]+/$
+# page links
+http://www\.gaskrank\.tv/tv/[^/]+/filme-[0-9]+\.htm$
+http://www\.gaskrank\.tv/tv/.+\.htm$	stream:libquvi

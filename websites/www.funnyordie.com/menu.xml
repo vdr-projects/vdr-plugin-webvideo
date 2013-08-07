@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<wvmenu>
+  <title>Funny or die</title>
+  <description>Funny Or Die is a comedy video website that combines user-generated content with original, exclusive content.</description>
+  <ul>
+    <li><a href="http://www.funnyordie.com/staff/videos" class="webvi">Staff</a></li>
+    <li><a href="http://www.funnyordie.com/browse/videos/all/all/most_viewed" class="webvi">Most viewed</a></li>
+    <li><a href="http://www.funnyordie.com/browse/videos/all/all/most_buzz" class="webvi">Trending now</a></li>
+    <li><a href="http://www.funnyordie.com/browse/videos/all/all/most_recent" class="webvi">Most recent</a></li>
+    <li><a href="http://www.funnyordie.com/browse/videos/nsfw/all/most_viewed/this_month" class="webvi">NSFW</a></li>
+    <li><a href="http://www.funnyordie.com/browse/videos/fails/all/most_viewed/this_month" class="webvi">Fails</a></li>
+    <li><a href="http://www.funnyordie.com/browse/videos/dumb_people/all/most_viewed/this_month" class="webvi">Dumb people</a></li>
+    <li><a href="http://www.funnyordie.com/browse/videos/animals/all/most_viewed/this_month" class="webvi">Animals</a></li>
+    <li><a href="http://www.funnyordie.com/browse/videos/clean_comedy/all/most_viewed/this_month" class="webvi">Clean comedy</a></li>
+    <li><a href="http://www.funnyordie.com/browse/videos/sports/all/most_viewed/this_month" class="webvi">Sports</a></li>
+    <li><a href="http://www.funnyordie.com/browse/videos/music/all/most_viewed/this_month" class="webvi">Music</a></li>
+  </ul>
+</wvmenu>

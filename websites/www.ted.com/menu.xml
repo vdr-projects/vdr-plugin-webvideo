@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<wvmenu>
+  <title>TED</title>
+  <description>TED is a nonprofit devoted to Ideas Worth Spreading. It started out (in 1984) as a conference bringing together people from three worlds: Technology, Entertainment, Design. Since then its scope has become ever broader. Along with two annual conferences -- the TED Conference on the West Coast each spring, and the TEDGlobal conference in Edinburgh UK each summer -- TED includes the award-winning TED Talks video site, the Open Translation Project and TED Conversations, the inspiring TED Fellows and TEDx programs, and the annual TED Prize.</description>
+
+  <ul>
+    <li><a href="http://www.ted.com/topics" class="webvi">Topics</a></li>
+    <li><a href="http://www.ted.com/playlists" class="webvi">Playlists</a></li>
+  </ul>
+</wvmenu>
