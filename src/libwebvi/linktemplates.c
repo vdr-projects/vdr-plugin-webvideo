@@ -126,15 +126,12 @@ LinkAction *parse_action(const gchar *actionstr) {
 
   if (*actionstr == '\0') {
     return link_action_create(LINK_ACTION_PARSE, NULL);
-  } else if (strcmp(actionstr, STREAM_LIBQUVI_SELECTOR) == 0) {
-    return link_action_create(LINK_ACTION_STREAM_LIBQUVI, NULL);
+  } else if (strncmp(actionstr, STREAM_SELECTOR, STREAM_SELECTOR_LEN) == 0) {
+    const gchar *command = actionstr + STREAM_SELECTOR_LEN;
+    return link_action_create(LINK_ACTION_STREAM, command);
   } else if (strncmp(actionstr, EXT_CMD_SELECTOR, EXT_CMD_SELECTOR_LEN) == 0) {
     const gchar *command = actionstr + EXT_CMD_SELECTOR_LEN;
     return link_action_create(LINK_ACTION_EXTERNAL_COMMAND, command);
-  } else if (strncmp(actionstr, STREAM_SELECTOR, STREAM_SELECTOR_LEN) == 0) {
-    g_log(LIBWEBVI_LOG_DOMAIN, G_LOG_LEVEL_WARNING,
-          "Unknown streamer %s in link template file", actionstr);
-    return NULL;
   } else {
     g_log(LIBWEBVI_LOG_DOMAIN, G_LOG_LEVEL_WARNING,
           "Invalid action %s in link template file", actionstr);

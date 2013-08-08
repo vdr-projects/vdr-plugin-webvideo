@@ -73,7 +73,7 @@ struct ActionTypeMessage {
 const char *link_action_type_to_string(LinkActionType atype) {
   static struct ActionTypeMessage messages[] = 
     {{LINK_ACTION_PARSE, "regular link"},
-     {LINK_ACTION_STREAM_LIBQUVI, "stream"},
+     {LINK_ACTION_STREAM, "stream"},
      {LINK_ACTION_EXTERNAL_COMMAND, "external command"}};
 
   for (int i=0;  i<(sizeof(messages)/sizeof(messages[0])); i++) {

@@ -41,6 +41,9 @@ void webvi_context_set_debug(WebviContext *self,
 void webvi_context_set_template_path(WebviContext *self,
                                      const char *path);
 const char *webvi_context_get_template_path(const WebviContext *self);
+void webvi_context_set_menu_script_path(WebviContext *self,
+                                       const char *path);
+const char *webvi_context_get_menu_script_path(const WebviContext *self);
 const LinkTemplates *get_link_templates(WebviContext *self);
 CURLM *webvi_context_get_curl_multi_handle(WebviContext *self);
 void webvi_context_set_timeout_callback(WebviContext *ctx,

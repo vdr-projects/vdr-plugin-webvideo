@@ -6,6 +6,7 @@
 #include "request.h"
 
 #define DEFAULT_TEMPLATE_PATH "/etc/webvi/websites"
+#define DEFAULT_MENU_SCRIPT_PATH "/usr/local/bin/webvi/menuscripts"
 #define MAX_MESSAGE_LENGTH 128
 
 struct WebviContext {
@@ -14,6 +15,7 @@ struct WebviContext {
   WebviHandle next_request;
   CURLM *curl_multi_handle;
   gchar *template_path;
+  gchar *menu_script_path;
   webvi_timeout_callback timeout_callback;
   void *timeout_data;
   GArray *finish_messages;
@@ -128,11 +130,22 @@ void webvi_context_set_template_path(WebviContext *self, const char *path) {
   if (self->template_path) {
     g_free(self->template_path);
   }
-  self->template_path = path ? g_strdup(path) : NULL;
+  self->template_path = g_strdup(path);
 }
 
 const char *webvi_context_get_template_path(const WebviContext *self) {
   return self->template_path ? self->template_path : DEFAULT_TEMPLATE_PATH;
+}
+
+void webvi_context_set_menu_script_path(WebviContext *self, const char *path) {
+  if (self->menu_script_path) {
+    g_free(self->menu_script_path);
+  }
+  self->menu_script_path = g_strdup(path);
+}
+
+const char *webvi_context_get_menu_script_path(const WebviContext *self) {
+  return self->menu_script_path ? self->menu_script_path : DEFAULT_MENU_SCRIPT_PATH;
 }
 
 const LinkTemplates *get_link_templates(WebviContext *self) {

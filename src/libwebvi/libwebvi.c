@@ -101,6 +101,10 @@ WebviResult webvi_set_config(WebviCtx ctxhandle, WebviConfig conf, ...) {
     webvi_context_set_timeout_data(ctx, data);
     break;
   }
+  case WEBVI_CONFIG_MENU_SCRIPT_PATH:
+    p = va_arg(argptr, char *);
+    webvi_context_set_menu_script_path(ctx, p);
+    break;
   default:
     res = WEBVIERR_INVALID_PARAMETER;
   };

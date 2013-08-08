@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<wvmenu>
+  <title>YLE Areena</title>
+  <description></description>
+  <ul>
+    <li><a href="http://areena.yle.fi/tv/" class="webvi">TV</a></li>
+    <li><a href="http://areena.yle.fi/radio/" class="webvi">Radio</a></li>
+  </ul>
+</wvmenu>

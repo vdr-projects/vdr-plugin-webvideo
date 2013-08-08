@@ -70,6 +70,12 @@ int main(int argc, char** argv)
                   test_pipe_state_not_chaning_after_finished);
   g_test_add_func("/pipe/fdset", test_pipe_fdset);
   g_test_add_func("/pipe/delete_all", test_pipe_delete_all);
+  g_test_add_func("/pipe/menu_validator_valid_menu",
+                  test_pipe_menu_validator_valid_menu);
+  g_test_add_func("/pipe/menu_validator_invalid_xml",
+                  test_pipe_menu_validator_invalid_xml);
+  g_test_add_func("/pipe/menu_validator_invalid_root",
+                  test_pipe_menu_validator_invalid_root);
 
   g_test_add_func("/urlutils/scheme", test_url_scheme);
   g_test_add_func("/urlutils/scheme_no_scheme", test_url_scheme_no_scheme);

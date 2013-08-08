@@ -1,0 +1,14 @@
+#!/bin/bash
+
+set -e
+
+. utils.sh
+
+if [ "x$1" = "x" ]; then
+    exit 1
+fi
+
+STREAMURL=$(yle-dl --showurl "$1")
+STREAMTITLE=$(yle-dl --showtitle "$1")
+
+outputWebviMenu "$STREAMURL" "$STREAMTITLE"

@@ -102,7 +102,8 @@ typedef enum {
   WEBVI_CONFIG_TEMPLATE_PATH,
   WEBVI_CONFIG_DEBUG,
   WEBVI_CONFIG_TIMEOUT_CALLBACK,
-  WEBVI_CONFIG_TIMEOUT_DATA
+  WEBVI_CONFIG_TIMEOUT_DATA,
+  WEBVI_CONFIG_MENU_SCRIPT_PATH
 } WebviConfig;
 
 typedef struct {
@@ -166,6 +167,9 @@ LIBWEBVI_DLL_EXPORT const char* webvi_strerror(WebviResult err);
  *
  * WEBVI_CONFIG_TEMPLATE_PATH
  *   Set the base directory for the XSLT templates (char *)
+ *
+ * WEBVI_CONFIG_MENU_SCRIPT_PATH
+ *   Specify the directory where to look for the menu scripts (char *)
  *
  * WEBVI_CONFIG_DEBUG
  *   If value is not "0", print debug output to stdin (char *)

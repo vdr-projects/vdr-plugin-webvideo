@@ -20,6 +20,7 @@ _WEBVI_CONFIG_TEMPLATE_PATH = 0
 _WEBVI_CONFIG_DEBUG = 1
 _WEBVI_CONFIG_TIMEOUT_CALLBACK = 2
 _WEBVI_CONFIG_TIMEOUT_DATA = 3
+_WEBVI_CONFIG_MENU_SCRIPT_PATH = 4
 
 class WebviState:
     NOT_FINISHED = 0
@@ -106,6 +107,15 @@ class WebviContext:
         set_config.argtypes = [c_long, c_int, c_char_p]
         set_config.restype = raise_if_webvi_result_not_ok
         set_config(self.handle, _WEBVI_CONFIG_TEMPLATE_PATH, path)
+
+    def set_menu_script_path(self, path):
+        if self.handle is None:
+            return
+        
+        set_config = libwebvi.webvi_set_config
+        set_config.argtypes = [c_long, c_int, c_char_p]
+        set_config.restype = raise_if_webvi_result_not_ok
+        set_config(self.handle, _WEBVI_CONFIG_MENU_SCRIPT_PATH, path)
 
     def set_debug(self, enabled):
         if self.handle is None:

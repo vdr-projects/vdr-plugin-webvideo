@@ -52,8 +52,11 @@ struct PipeMainMenuDownloader {
 
 struct PipeExternalDownloader {
   PipeComponent pipe_data;
+  gchar *command;
   gchar *url;
-  int fd;
+  gchar *menu_script_path;
+  GPid pid;
+  gint fd;
 };
 
 struct PipeLocalFile {
@@ -62,11 +65,8 @@ struct PipeLocalFile {
   int fd;
 };
 
-struct PipeLibquvi {
+struct PipeMenuValidator {
   PipeComponent pipe_data;
-  gchar *url;
-  GPid pid;
-  gint quvi_output;
   xmlParserCtxtPtr parser;
 };
 
@@ -108,15 +108,9 @@ static gboolean pipe_external_downloader_handle_socket(
   PipeComponent *instance, int fd, int bitmask);
 static void pipe_external_downloader_delete(PipeComponent *instance);
 
-static void pipe_libquvi_fdset(PipeComponent *instance, fd_set *readfd,
-                               fd_set *writefd, fd_set *excfd, int *maxfd);
-static gboolean pipe_libquvi_handle_socket(PipeComponent *instance,
-                                           int fd, int bitmask);
-static gboolean pipe_libquvi_parse(PipeComponent *instance, char *buf, size_t len);
-static void pipe_libquvi_finished(PipeComponent *instance, RequestState state);
-static xmlChar *quvi_xml_get_stream_url(xmlDoc *doc);
-static xmlChar *quvi_xml_get_stream_title(xmlDoc *doc);
-static void pipe_libquvi_delete(PipeComponent *instance);
+static gboolean pipe_menu_validator_parse(PipeComponent *instance, char *buf, size_t len);
+static void pipe_menu_validator_validate(PipeComponent *instance, RequestState state);
+static void pipe_menu_validator_delete(PipeComponent *instance);
 
 static CURL *start_curl(const char *url, CURLM *curlmulti,
                         PipeComponent *instance);
@@ -173,7 +167,7 @@ void pipe_component_finished(PipeComponent *self, RequestState state) {
     if (self->finished)
       self->finished(self, state);
     if (self->next)
-      pipe_component_finished(self->next, state);
+      pipe_component_finished(self->next, self->state);
   }
 }
 
@@ -470,14 +464,16 @@ void pipe_local_file_delete(PipeComponent *instance) {
 /***** PipeExternalDownloader *****/
 
 
-PipeExternalDownloader *pipe_external_downloader_create(const gchar *url,
-                                                        const gchar *command)
+PipeExternalDownloader *pipe_external_downloader_create(
+  const gchar *url, const gchar *command, const gchar *menu_script_path)
 {
   INITIALIZE_PIPE_WITH_FDSET(PipeExternalDownloader, NULL, NULL,
                              pipe_external_downloader_delete,
                              pipe_external_downloader_fdset,
                              pipe_external_downloader_handle_socket);
+  self->command = g_strdup(command);
   self->url = g_strdup(url);
+  self->menu_script_path = g_strdup(menu_script_path);
   self->fd = -1;
 
   g_log(LIBWEBVI_LOG_DOMAIN, G_LOG_LEVEL_DEBUG,
@@ -487,8 +483,21 @@ PipeExternalDownloader *pipe_external_downloader_create(const gchar *url,
 }
 
 void pipe_external_downloader_start(PipeExternalDownloader *self) {
-  // FIXME
-  pipe_component_finished((PipeComponent *)self, WEBVISTATE_INTERNAL_ERROR);
+  GError *error = NULL;
+  gchar *argv[] = {self->command, self->url, NULL};
+  /* gchar *envpath = g_strconcat("PATH=", LIBWEBVI_SCRIPT_PATH, */
+  /*                              ":/usr/bin:/bin:/usr/local/bin", NULL); */
+  /* gchar *envp[] = {envpath, NULL}; */
+  g_spawn_async_with_pipes(self->menu_script_path, argv, NULL, 0,
+                           NULL, NULL, &self->pid, NULL, &self->fd,
+                           NULL, &error);
+  if (error) {
+    g_log(LIBWEBVI_LOG_DOMAIN, G_LOG_LEVEL_INFO,
+          "Executing '%s %s' failed: %s", self->command, self->url,
+          error->message);
+    pipe_component_finished((PipeComponent *)self, WEBVISTATE_SUBPROCESS_FAILED);
+  }
+  /* g_free(envpath); */
 }
 
 void pipe_external_downloader_fdset(PipeComponent *instance, fd_set *readfd,
@@ -507,164 +516,102 @@ gboolean pipe_external_downloader_handle_socket(PipeComponent *instance,
 
 void pipe_external_downloader_delete(PipeComponent *instance) {
   PipeExternalDownloader *self = (PipeExternalDownloader *)instance;
-  if (self->fd != -1)
+  if (self->fd != -1) {
     close(self->fd);
-  g_free(self->url);
-  g_free(self);
-}
-
-
-/***** PipeLibquvi *****/
-
-
-PipeLibquvi *pipe_libquvi_create(const gchar *url) {
-  INITIALIZE_PIPE_WITH_FDSET(PipeLibquvi,
-                             pipe_libquvi_parse,
-                             pipe_libquvi_finished,
-                             pipe_libquvi_delete,
-                             pipe_libquvi_fdset,
-                             pipe_libquvi_handle_socket);
-  self->url = g_strdup(url);
-  self->pid = -1;
-  self->quvi_output = -1;
-  return self;
-}
-
-void pipe_libquvi_start(PipeLibquvi *self) {
-  GError *error = NULL;
-  gchar *argv[] = {"quvi", "--xml", self->url};
-
-  g_spawn_async_with_pipes(NULL, argv, NULL,
-                           G_SPAWN_SEARCH_PATH | G_SPAWN_STDERR_TO_DEV_NULL,
-                           NULL, NULL, &self->pid, NULL, &self->quvi_output,
-                           NULL, &error);
-  if (error) {
-    g_log(LIBWEBVI_LOG_DOMAIN, G_LOG_LEVEL_WARNING,
-          "Calling quvi failed: %s", error->message);
-    pipe_component_finished((PipeComponent *)self, WEBVISTATE_SUBPROCESS_FAILED);
-  }
-}
-
-void pipe_libquvi_fdset(PipeComponent *instance, fd_set *readfd,
-                        fd_set *writefd, fd_set *excfd, int *maxfd)
-{
-  PipeLibquvi *self = (PipeLibquvi *)instance;
-  append_to_fdset(self->quvi_output, readfd, maxfd);
-}
-
-gboolean pipe_libquvi_handle_socket(PipeComponent *instance,
-                                    int fd, int bitmask)
-{
-  PipeLibquvi *self = (PipeLibquvi *)instance;
-  return read_from_fd_to_pipe(instance, &self->quvi_output, fd, bitmask);
-}
-
-gboolean pipe_libquvi_parse(PipeComponent *instance, char *buf, size_t len) {
-  PipeLibquvi *self = (PipeLibquvi *)instance;
-  if (!self->parser) {
-    self->parser = xmlCreatePushParserCtxt(NULL, NULL, buf, len, "quvioutput.xml");
-    g_assert(self->parser);
-  } else {
-    xmlParseChunk(self->parser, buf, len, 0);
-  }
-
-  return FALSE;
-}
-
-void pipe_libquvi_finished(PipeComponent *instance, RequestState state) {
-  if (state != WEBVISTATE_FINISHED_OK) {
-    pipe_component_finished(instance, state);
-    return;
-  }
-
-  PipeLibquvi *self = (PipeLibquvi *)instance;
-  if (!self->parser) {
-    g_log(LIBWEBVI_LOG_DOMAIN, G_LOG_LEVEL_WARNING, "No output from quvi!");
-    pipe_component_finished(instance, WEBVISTATE_SUBPROCESS_FAILED);
-    return;
-  }
-
-  xmlParseChunk(self->parser, NULL, 0, 1);
-  xmlDoc *doc = self->parser->myDoc;
-
-  xmlChar *dump;
-  int dumpLen;
-  xmlDocDumpMemory(doc, &dump, &dumpLen);
-  g_log(LIBWEBVI_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "quvi output:\n%s", dump);
-  xmlFree(dump);
-  dump = NULL;
-
-  xmlChar *encoded_url = quvi_xml_get_stream_url(doc);
-  if (!encoded_url) {
-    g_log(LIBWEBVI_LOG_DOMAIN, G_LOG_LEVEL_WARNING, "No url in quvi output!");
-    pipe_component_finished(instance, WEBVISTATE_SUBPROCESS_FAILED);
-    return;
-  }
-
-  /* URLs in quvi XML output are encoded by curl_easy_escape */
-  char *url = curl_unescape((char *)encoded_url, strlen((char *)encoded_url));
-  xmlChar *title = quvi_xml_get_stream_title(doc);
-
-  MenuBuilder *menu_builder = menu_builder_create();
-  menu_builder_set_title(menu_builder, (char *)title);
-  menu_builder_append_link_plain(menu_builder, url, (char *)title, NULL);
-  char *menu = menu_builder_to_string(menu_builder);
-  if (self->pipe_data.next) {
-    pipe_component_append(self->pipe_data.next, menu, strlen(menu));
-    pipe_component_finished(self->pipe_data.next, state);
-  }
-
-  free(menu);
-  menu_builder_delete(menu_builder);
-  xmlFree(title);
-  curl_free(url);
-  xmlFree(encoded_url);
-}
-
-xmlChar *quvi_xml_get_stream_url(xmlDoc *doc) {
-  xmlNode *root = xmlDocGetRootElement(doc);
-  xmlNode *node = root->children;
-  while (node) {
-    if (xmlStrEqual(node->name, BAD_CAST "link")) {
-      xmlNode *link_child = node->children;
-      while (link_child) {
-        if (xmlStrEqual(link_child->name, BAD_CAST "url")) {
-          return xmlNodeGetContent(link_child);
-        }
-        link_child = link_child->next;
-      }
-    }
-    node = node->next;
-  }
-
-  return NULL;
-}
-
-xmlChar *quvi_xml_get_stream_title(xmlDoc *doc) {
-  xmlNode *root = xmlDocGetRootElement(doc);
-  xmlNode *node = root->children;
-  while (node) {
-    if (xmlStrEqual(node->name, BAD_CAST "page_title")) {
-      return xmlNodeGetContent(node);
-    }
-    node = node->next;
-  }
-
-  return NULL;
-}
-
-void pipe_libquvi_delete(PipeComponent *instance) {
-  PipeLibquvi *self = (PipeLibquvi *)instance;
-  if (self->quvi_output != -1) {
-    close(self->quvi_output);
   }
   if (self->pid != -1) {
     g_spawn_close_pid(self->pid);
   }
+  g_free(self->url);
+  g_free(self->command);
+  g_free(self->menu_script_path);
+  free(self);
+}
+
+
+/***** PipeMenuValidator *****/
+
+
+PipeMenuValidator *pipe_menu_validator_create() {
+  INITIALIZE_PIPE(PipeMenuValidator, pipe_menu_validator_parse,
+                  pipe_menu_validator_validate,
+                  pipe_menu_validator_delete);
+  return self;
+}
+
+gboolean pipe_menu_validator_parse(PipeComponent *instance, char *buf, size_t len) {
+  PipeMenuValidator *self = (PipeMenuValidator *)instance;
+  if (!self->parser) {
+    self->parser = xmlCreatePushParserCtxt(NULL, NULL, buf, len,
+                                           "externalscript.xml");
+    if (!self->parser) {
+      pipe_component_finished(instance, WEBVISTATE_MEMORY_ALLOCATION_ERROR);
+    }
+  } else {
+    int err = xmlParseChunk(self->parser, buf, len, 0);
+    if (err) {
+      g_log(LIBWEBVI_LOG_DOMAIN, G_LOG_LEVEL_INFO,
+            "Menu is not valid XML (libxml2 error %d)", err);
+      pipe_component_finished(instance, WEBVISTATE_SUBPROCESS_FAILED);
+      return FALSE;
+    }
+  }
+  return TRUE;
+}
+
+void pipe_menu_validator_validate(PipeComponent *instance, RequestState state) {
+  PipeMenuValidator *self = (PipeMenuValidator *)instance;
+  if (state != WEBVISTATE_FINISHED_OK) {
+    return;
+  }
+
+  if (!self->parser) {
+    g_log(LIBWEBVI_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "no menu to validate");
+    return;
+  }
+
+  int err = xmlParseChunk(self->parser, NULL, 0, 1);
+  if (err) {
+    g_log(LIBWEBVI_LOG_DOMAIN, G_LOG_LEVEL_INFO,
+          "Menu is not valid XML (xmlParserErrors %d)", err);
+    instance->state = WEBVISTATE_SUBPROCESS_FAILED;
+    return;
+  }
+
+  xmlDoc *doc = self->parser->myDoc;
+  if (!doc) {
+    g_log(LIBWEBVI_LOG_DOMAIN, G_LOG_LEVEL_INFO,
+          "XML parser returned no document");
+    instance->state = WEBVISTATE_SUBPROCESS_FAILED;
+    return;
+  }
+
+  xmlChar *dump;
+  int dumpLen;
+  xmlDocDumpMemory(doc, &dump, &dumpLen);
+  g_log(LIBWEBVI_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "validating menu:\n%s", dump);
+  xmlFree(dump);
+  dump = NULL;
+
+  xmlNode *root = xmlDocGetRootElement(doc);
+  if (!xmlStrEqual(root->name, BAD_CAST "wvmenu")) {
+    g_log(LIBWEBVI_LOG_DOMAIN, G_LOG_LEVEL_INFO,
+          "Unexpected root node: %s", (char *)root->name);
+    instance->state = WEBVISTATE_SUBPROCESS_FAILED;
+    return;
+  }
+
+  g_log(LIBWEBVI_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "Menu is valid");
+}
+
+void pipe_menu_validator_delete(PipeComponent *instance) {
+  PipeMenuValidator *self = (PipeMenuValidator *)instance;
   if (self->parser) {
+    if (self->parser->myDoc) {
+      xmlFreeDoc(self->parser->myDoc);
+    }
     xmlFreeParserCtxt(self->parser);
   }
-  g_free(self->url);
   free(self);
 }
 

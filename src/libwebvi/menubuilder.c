@@ -67,7 +67,7 @@ void add_link_to_menu(gpointer data, gpointer instance) {
 
 void menu_builder_append_link(MenuBuilder *self, const Link *link) {
   const char *class;
-  if (link_get_type(link) == LINK_ACTION_STREAM_LIBQUVI) {
+  if (link_get_type(link) == LINK_ACTION_STREAM) {
     class = "stream";
   } else {
     class = "webvi";

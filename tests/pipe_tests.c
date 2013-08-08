@@ -8,6 +8,12 @@
 #define TEST_FD1 1
 #define TEST_FD2 2
 
+#define MENU_VALID "<?xml version=\"1.0\" encoding=\"UTF-8\"?>" \
+  "<wvmenu><title>Test menu</title></wvmenu>"
+#define INVALID_XML ">> this & is not XML >>"
+#define MENU_INVALID_ROOT "<?xml version=\"1.0\" encoding=\"UTF-8\"?>" \
+  "<invalid></invalid>"
+
 typedef struct CountingPipe {
   PipeComponent p;
   size_t bytes;
@@ -243,4 +249,45 @@ void testpipe_delete2(PipeComponent *component) {
   CountingPipe *self = (CountingPipe *)component;
   delete2_called = TRUE;
   free(self);
+}
+
+void test_pipe_menu_validator_valid_menu() {
+  PipeMenuValidator *pipe = pipe_menu_validator_create();
+  g_assert(pipe);
+
+  pipe_component_append((PipeComponent *)pipe, MENU_VALID,
+                        strlen(MENU_VALID));
+  pipe_component_finished((PipeComponent *)pipe, WEBVISTATE_FINISHED_OK);
+  RequestState state = pipe_component_get_state((PipeComponent *)pipe);
+  g_assert(state == WEBVISTATE_FINISHED_OK);
+
+  pipe_delete_full((PipeComponent *)pipe);
+}
+
+void test_pipe_menu_validator_invalid_xml() {
+  PipeMenuValidator *pipe = pipe_menu_validator_create();
+  g_assert(pipe);
+
+  pipe_component_append((PipeComponent *)pipe, INVALID_XML,
+                        strlen(INVALID_XML));
+  pipe_component_finished((PipeComponent *)pipe, WEBVISTATE_FINISHED_OK);
+  RequestState state = pipe_component_get_state((PipeComponent *)pipe);
+  g_assert((state != WEBVISTATE_NOT_FINISHED) && 
+           (state != WEBVISTATE_FINISHED_OK));
+
+  pipe_delete_full((PipeComponent *)pipe);
+}
+
+void test_pipe_menu_validator_invalid_root() {
+  PipeMenuValidator *pipe = pipe_menu_validator_create();
+  g_assert(pipe);
+
+  pipe_component_append((PipeComponent *)pipe, MENU_INVALID_ROOT,
+                        strlen(MENU_INVALID_ROOT));
+  pipe_component_finished((PipeComponent *)pipe, WEBVISTATE_FINISHED_OK);
+  RequestState state = pipe_component_get_state((PipeComponent *)pipe);
+  g_assert((state != WEBVISTATE_NOT_FINISHED) && 
+           (state != WEBVISTATE_FINISHED_OK));
+
+  pipe_delete_full((PipeComponent *)pipe);
 }

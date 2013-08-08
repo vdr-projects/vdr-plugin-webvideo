@@ -11,7 +11,7 @@ http://www\.youtube\.com/playlist\?list=
 # search results
 http://www\.youtube\.com/results\?
 # video
-http://www\.youtube\.com/watch\?	stream:libquvi
+http://www\.youtube\.com/watch\?	stream:stream-quvi
 
 ### Metacafe ###
 
@@ -20,7 +20,7 @@ http://www\.metacafe\.com/videos/
 # search results
 ###http://www\.metacafe\.com/topics/
 # video
-http://www\.metacafe\.com/watch/	stream:libquvi
+http://www\.metacafe\.com/watch/	stream:stream-quvi
 
 ### www.ruutu.fi ###
 
@@ -29,7 +29,7 @@ http://www\.ruutu\.fi/ohjelmat/.+?/$
 # search results
 http://www\.ruutu\.fi/hakutulokset/
 # video
-http://www\.ruutu\.fi/ohjelmat/.+?/.+	stream:libquvi
+http://www\.ruutu\.fi/ohjelmat/.+?/.+	stream:stream-quvi
 
 ### Vimeo ###
 
@@ -40,8 +40,8 @@ http://vimeo\.com/categories/[^/]+$
 # group
 http://vimeo\.com/groups/[^/]+$
 # video
-http://vimeo\.com/[0-9]+$	stream:libquvi
-http://vimeo\.com/.*/[0-9]+$	stream:libquvi
+http://vimeo\.com/[0-9]+$	stream:stream-quvi
+http://vimeo\.com/.*/[0-9]+$	stream:stream-quvi
 
 ### Dailymotion ###
 
@@ -49,21 +49,22 @@ http://vimeo\.com/.*/[0-9]+$	stream:libquvi
 http://www\.dailymotion\.com/en/channel/
 http://www\.dailymotion\.com/channel/
 # video
-http://www\.dailymotion\.com/video/	stream:libquvi
+http://www\.dailymotion\.com/video/	stream:stream-quvi
 
 ### imdb ###
 
 # video
-http://www\.imdb\.com/video/	stream:libquvi
+http://www\.imdb\.com/video/	stream:stream-quvi
 
 ### areena.yle.fi ###
 
-# category
-http://areena\.yle\.fi/(?:tv|radio)/?.*/kaikki.json?	bin:areena-category.py
-# search results
-http://areena.yle.fi/.json	bin:areena-category.py
 # video
-http://areena\.yle\.fi/(?:tv|radio)/[0-9]+$	stream:yle-dl
+http://areena\.yle\.fi/(tv|radio)/[0-9]+$	stream:stream-areena
+# category
+http://areena\.yle\.fi/(tv|radio)/.*[a-z].*$	bin:areena-category.py
+#http://areena\.yle\.fi/(tv|radio)/?.*/kaikki.json?	bin:areena-category.py
+# search results
+#http://areena.yle.fi/.json	bin:areena-category.py
 
 ### ted.com ###
 
@@ -72,28 +73,28 @@ http://www\.ted\.com/topics
 # playlists
 http://www\.ted\.com/playlists
 # video
-http://www\.ted\.com/talks/	stream:libquvi
+http://www\.ted\.com/talks/	stream:stream-quvi
 
 ### funnyordie.com ###
 
-http://www\.funnyordie\.com/videos/[0-9a-f]{10}/	stream:libquvi
+http://www\.funnyordie\.com/videos/[0-9a-f]{10}/	stream:stream-quvi
 
 ### videobash.com ###
 
-http://www\.videobash\.com/video_show/	stream:libquvi
+http://www\.videobash\.com/video_show/	stream:stream-quvi
 http://www\.videobash\.com/videos/
 
 ### wimp.com ###
 
-http://www\.wimp\.com/.	stream:libquvi
+http://www\.wimp\.com/.	stream:stream-quvi
 
 ### 101greatgoals.com ###
 
-http://www\.101greatgoals\.com/gvideos/	stream:libquvi
+http://www\.101greatgoals\.com/gvideos/	stream:stream-quvi
 
 ### gaskrank.tv ###
 
 http://www\.gaskrank\.tv/tv/[^/]+/$
 # page links
 http://www\.gaskrank\.tv/tv/[^/]+/filme-[0-9]+\.htm$
-http://www\.gaskrank\.tv/tv/.+\.htm$	stream:libquvi
+http://www\.gaskrank\.tv/tv/.+\.htm$	stream:stream-quvi

@@ -28,7 +28,6 @@ static PipeComponent *build_and_start_mainmenu_pipe(const WebviRequest *self);
 static PipeComponent *build_and_start_local_pipe(const WebviRequest *self);
 static PipeComponent *build_and_start_external_pipe(const WebviRequest *self,
                                                     const char *command);
-static PipeComponent *build_and_start_libquvi_pipe(const WebviRequest *self);
 static PipeComponent *build_and_start_menu_pipe(const WebviRequest *self);
 
 WebviRequest *request_create(const char *url, struct WebviContext *ctx) {
@@ -73,9 +72,8 @@ PipeComponent *pipe_factory(const WebviRequest *self) {
     const LinkAction *action = link_templates_get_action(
       get_link_templates(self->ctx), self->url);
     LinkActionType action_type = action ? link_action_get_type(action) : LINK_ACTION_PARSE;
-    if (action_type == LINK_ACTION_STREAM_LIBQUVI) {
-      head = build_and_start_libquvi_pipe(self);
-    } else if (action_type == LINK_ACTION_EXTERNAL_COMMAND) {
+    if ((action_type == LINK_ACTION_STREAM) || 
+        (action_type == LINK_ACTION_EXTERNAL_COMMAND)) {
       const char *command = link_action_get_command(action);
       head = build_and_start_external_pipe(self, command);
     } else {
@@ -108,22 +106,18 @@ PipeComponent *build_and_start_local_pipe(const WebviRequest *self) {
   return (PipeComponent *)p1;
 }
 
-PipeComponent *build_and_start_external_pipe(const WebviRequest *self, const char *command) {
-  PipeExternalDownloader *p1 = pipe_external_downloader_create(self->url, command);
-  PipeComponent *p2 = (PipeComponent *)pipe_callback_wrapper_create(
+PipeComponent *build_and_start_external_pipe(const WebviRequest *self,
+                                             const char *command)
+{
+  const char *path = webvi_context_get_menu_script_path(self->ctx);
+  PipeExternalDownloader *p1 = pipe_external_downloader_create(
+    self->url, command, path);
+  PipeComponent *p2 = (PipeComponent *)pipe_menu_validator_create();
+  PipeComponent *p3 = (PipeComponent *)pipe_callback_wrapper_create(
     self->read_cb, self->readdata, notify_pipe_finished, (void *)self);
   pipe_component_set_next((PipeComponent *)p1, p2);
+  pipe_component_set_next((PipeComponent *)p2, p3);
   pipe_external_downloader_start(p1);
-
-  return (PipeComponent *)p1;
-}
-
-PipeComponent *build_and_start_libquvi_pipe(const WebviRequest *self) {
-  PipeLibquvi *p1 = pipe_libquvi_create(self->url);
-  PipeComponent *p2 = (PipeComponent *)pipe_callback_wrapper_create(
-    self->read_cb, self->readdata, notify_pipe_finished, (void *)self);
-  pipe_component_set_next((PipeComponent *)p1, p2);
-  pipe_libquvi_start(p1);
 
   return (PipeComponent *)p1;
 }

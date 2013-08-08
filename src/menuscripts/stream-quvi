@@ -1,0 +1,19 @@
+#!/bin/bash
+
+set -e
+
+. utils.sh
+
+if [ "x$1" = "x" ]; then
+    exit 1
+fi
+
+Q=$(quvi "$1")
+if [ "x$Q" = "x" ]; then
+    exit 1
+fi
+
+STREAMURL=$(echo "$Q" | sed -n 's/.*"url": "\(.*\)".*/\1/p' | head -n1)
+STREAMTITLE=$(echo "$Q" | sed -n 's/.*"page_title": "\(.*\)".*/\1/p' | head -n1)
+
+outputWebviMenu "$STREAMURL" "$STREAMTITLE"

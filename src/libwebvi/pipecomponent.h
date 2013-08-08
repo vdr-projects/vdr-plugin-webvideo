@@ -47,6 +47,7 @@ typedef struct PipeMainMenuDownloader PipeMainMenuDownloader;
 typedef struct PipeLocalFile PipeLocalFile;
 typedef struct PipeExternalDownloader PipeExternalDownloader;
 typedef struct PipeLibquvi PipeLibquvi;
+typedef struct PipeMenuValidator PipeMenuValidator;
 
 void pipe_component_initialize(PipeComponent *self,
     gboolean (*process_cb)(PipeComponent *, char *, size_t),
@@ -85,11 +86,13 @@ PipeCallbackWrapper *pipe_callback_wrapper_create(
     void (*finish_callback)(RequestState, void *),
     void *finishdata);
 
-PipeExternalDownloader *pipe_external_downloader_create(const gchar *url,
-                                                        const gchar *command);
+PipeExternalDownloader *pipe_external_downloader_create(
+  const gchar *url, const gchar *command, const gchar *menu_script_path);
 void pipe_external_downloader_start(PipeExternalDownloader *self);
 
 PipeLibquvi *pipe_libquvi_create(const gchar *url);
 void pipe_libquvi_start(PipeLibquvi *self);
+
+PipeMenuValidator *pipe_menu_validator_create();
 
 #endif // __PIPECOMPONENT_H

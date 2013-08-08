@@ -106,6 +106,11 @@ def next_available_file_name(basename, ext):
         i += 1
     return '%s-%d%s' % (basename, i, ext)
 
+def is_rtmp_url(url):
+    RTMP_SCHEMES = ['rtmp://', 'rtmpe://', 'rtmps://',
+                    'rtmpt://', 'rtmpte://', 'rtmpts://']
+    return any(url.startswith(x) for x in RTMP_SCHEMES)
+
 
 class WebviURLopener(urllib.FancyURLopener):
     version = WEBVI_STREAM_USER_AGENT
@@ -242,7 +247,10 @@ class WVClient:
 
     def set_template_path(self, path):
         self.webvi.set_template_path(path)
-        
+
+    def set_menu_script_path(self, path):
+        self.webvi.set_menu_script_path(path)
+
     def update_timeout(self, timeout_ms):
         if timeout_ms < 0:
             self.alarm = None
@@ -429,6 +437,10 @@ class WVClient:
         return (menu[0].activate(), menu[0].label)
 
     def download_stream(self, url, title):
+        if is_rtmp_url(url):
+            print 'FIXME: downloading RTMP stream'
+            return
+        
         try:
             (tmpfilename, headers) = \
               urllib.urlretrieve(url, reporthook=dl_progress)
@@ -757,6 +769,10 @@ def parse_command_line(cmdlineargs, options):
                       dest='templatepath',
                       help='read video site templates from DIR', metavar='DIR',
                       default=None)
+    parser.add_option('-m', '--menuscriptpath', type='string',
+                      dest='menuscriptpath',
+                      help='read menu scripts from DIR', metavar='DIR',
+                      default=None)
     parser.add_option('-v', '--verbose', action='store_const', const=1,
                       dest='verbose', help='debug output', default=0)
     parser.add_option('--vfat', action='store_true',
@@ -770,6 +786,8 @@ def parse_command_line(cmdlineargs, options):
 
     if cmdlineopt.templatepath is not None:
         options['templatepath'] = cmdlineopt.templatepath
+    if cmdlineopt.menuscriptpath is not None:
+        options['menuscriptpath'] = cmdlineopt.menuscriptpath
     if cmdlineopt.verbose > 0:
         options['verbose'] = cmdlineopt.verbose
     if cmdlineopt.vfat:
@@ -815,6 +833,8 @@ def main(argv):
         client.set_debug(options['verbose'])
     if options.has_key('templatepath'):
         client.set_template_path(options['templatepath'])
+    if options.has_key('menuscriptpath'):
+        client.set_menu_script_path(options['menuscriptpath'])
 
     if options.has_key('url'):
         stream = options['url']
