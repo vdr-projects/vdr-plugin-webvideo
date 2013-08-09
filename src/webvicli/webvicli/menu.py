@@ -21,6 +21,13 @@ import urllib
 
 LINEWIDTH = 72
 
+def URI_template_substitute(template, substitutions):
+    res = template
+    for key, value in substitutions.iteritems():
+        keytemplate = '{' + str(key) + '}'
+        res = res.replace(keytemplate, str(value).replace(' ', '+'))
+    return res
+
 class Menu:
     def __init__(self):
         self.title = None
@@ -45,8 +52,12 @@ class Menu:
     def __len__(self):
         return len(self.items)
 
-    def add(self, menuitem):
+    def append(self, menuitem):
         self.items.append(menuitem)
+
+    def extend(self, menuitems):
+        for item in menuitems:
+            self.append(item)
 
 
 class MenuItemLink:
@@ -119,6 +130,10 @@ class MenuItemList:
                              initial_indent=lab,
                              subsequent_indent=' '*len(lab))
 
+    def add_value(self, value, label):
+        self.items.append(label)
+        self.values.append(value)
+
     def get_query(self):
         if (self.current >= 0) and (self.current < len(self.items)):
             return {self.name: self.values[self.current]}
@@ -145,12 +160,12 @@ class MenuItemList:
 
 
 class MenuItemSubmitButton:
-    def __init__(self, label, baseurl, subitems, encoding):
+    def __init__(self, label, uritemplate, subitems, encoding):
         self.label = label
-        if type(baseurl) == unicode:
-            self.baseurl = baseurl.encode('utf-8')
+        if type(uritemplate) == unicode:
+            self.uritemplate = uritemplate.encode('utf-8')
         else:
-            self.baseurl = baseurl
+            self.uritemplate = uritemplate
         self.subitems = subitems
         self.encoding = encoding
 
@@ -158,20 +173,11 @@ class MenuItemSubmitButton:
         return '[' + self.label + ']'
 
     def activate(self):
-        baseurl = self.baseurl
-        if baseurl.find('?') == -1:
-            baseurl += '?'
-        else:
-            baseurl += '&'
-
-        parts = []
-        for sub in self.subitems:
-            for key, val in sub.get_query().iteritems():
-                try:
-                    parts.append('subst=%s,%s' % \
-                      (urllib.quote(key.encode(self.encoding, 'ignore')),
-                       urllib.quote(val.encode(self.encoding, 'ignore'))))
-                except LookupError:
-                    pass
-
-        return baseurl + '&'.join(parts)
+        substitutions = {}
+        for item in self.subitems:
+            for key, value in item.get_query().iteritems():
+                if type(value) == unicode:
+                    value = value.encode('UTF-8')
+                substitutions[str(key)] = str(value)
+        
+        return URI_template_substitute(self.uritemplate, substitutions)

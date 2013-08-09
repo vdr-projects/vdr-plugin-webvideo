@@ -36,7 +36,7 @@ from optparse import OptionParser
 from ConfigParser import RawConfigParser
 from urlparse import urlparse
 from StringIO import StringIO
-from . import menu
+from menuparser import MenuParser
 
 VERSION = '0.5.0'
 WEBVI_STREAM_USER_AGENT = "Mozilla/5.0"
@@ -67,11 +67,6 @@ def safe_filename(name, vfat):
     res = res.encode(sys.getfilesystemencoding(), 'ignore')
 
     return res
-
-def get_content_unicode(node):
-    """node.getContent() returns an UTF-8 encoded sequence of bytes (a
-    string). Convert it to a unicode object."""
-    return unicode(node.getContent(), 'UTF-8', 'replace')
 
 def guess_video_extension(mimetype, url):
     """Return extension for a video at url with a given mimetype.
@@ -258,115 +253,6 @@ class WVClient:
             now = datetime.datetime.now()
             self.alarm = now + datetime.timedelta(milliseconds=timeout_ms)
 
-    def parse_page(self, page):
-        if page is None:
-            return None
-        try:
-            doc = libxml2.parseDoc(page)
-        except libxml2.parserError:
-            return None
-
-        root = doc.getRootElement()
-        if root.name != 'wvmenu':
-            return None
-        queryitems = []
-        menupage = menu.Menu()
-        node = root.children
-        while node:
-            if node.name == 'title':
-                menupage.title = get_content_unicode(node)
-            elif node.name == 'ul':
-                li_node = node.children
-                while li_node:
-                    if li_node.name == 'li':
-                        menuitem = self.parse_link(li_node)
-                        menupage.add(menuitem)
-                    li_node = li_node.next
-                
-            # elif node.name == 'link':
-            #     menuitem = self.parse_link(node)
-            #     menupage.add(menuitem)
-            # elif node.name == 'textfield':
-            #     menuitem = self.parse_textfield(node)
-            #     menupage.add(menuitem)
-            #     queryitems.append(menuitem)
-            # elif node.name == 'itemlist':
-            #     menuitem = self.parse_itemlist(node)
-            #     menupage.add(menuitem)
-            #     queryitems.append(menuitem)
-            # elif node.name == 'textarea':
-            #     menuitem = self.parse_textarea(node)
-            #     menupage.add(menuitem)
-            # elif node.name == 'button':
-            #     menuitem = self.parse_button(node, queryitems)
-            #     menupage.add(menuitem)
-            node = node.next
-        doc.freeDoc()
-        return menupage
-
-    def parse_link(self, node):
-        label = ''
-        ref = None
-        is_stream = False
-        child = node.children
-        while child:
-            if child.name == 'a':
-                label = get_content_unicode(child)
-                ref = child.prop('href')
-                is_stream = child.prop('class') != 'webvi'
-            child = child.next
-        return menu.MenuItemLink(label, ref, is_stream)
-
-    def parse_textfield(self, node):
-        label = ''
-        name = node.prop('name')
-        child = node.children
-        while child:
-            if child.name == 'label':
-                label = get_content_unicode(child)
-            child = child.next
-        return menu.MenuItemTextField(label, name)
-
-    def parse_textarea(self, node):
-        label = ''
-        child = node.children
-        while child:
-            if child.name == 'label':
-                label = get_content_unicode(child)
-            child = child.next
-        return menu.MenuItemTextArea(label)
-
-    def parse_itemlist(self, node):
-        label = ''
-        name = node.prop('name')
-        items = []
-        values = []
-        child = node.children
-        while child:
-            if child.name == 'label':
-                label = get_content_unicode(child)
-            elif child.name == 'item':
-                items.append(get_content_unicode(child))
-                values.append(child.prop('value'))
-            child = child.next
-        return menu.MenuItemList(label, name, items, values, sys.stdout)
-
-    def parse_button(self, node, queryitems):
-        label = ''
-        submission = None
-        encoding = 'utf-8'
-        child = node.children
-        while child:
-            if child.name == 'label':
-                label = get_content_unicode(child)
-            elif child.name == 'submission':
-                submission = get_content_unicode(child)
-                enc = child.hasProp('encoding')
-                if enc is not None:
-                    encoding = get_content_unicode(enc)
-            child = child.next
-        return menu.MenuItemSubmitButton(label, submission, queryitems, encoding)
-
     def execute_webvi(self, request):
         """Call self.webvi.process_some until request is finished."""
         while True:
@@ -397,7 +283,7 @@ class WVClient:
             print 'Download failed:', err
             return (status, err, None)
 
-        return (status, err, self.parse_page(dlbuffer.getvalue()))
+        return (status, err, MenuParser().parse_page(dlbuffer.getvalue()))
 
     def get_quality_params(self, videosite, streamtype):
         params = []
@@ -429,7 +315,7 @@ class WVClient:
             print 'Download failed:', err
             return (None, None)
 
-        menu = self.parse_page(dlbuffer.getvalue())
+        menu = MenuParser().parse_page(dlbuffer.getvalue())
         if menu is None or len(menu) == 0:
             print 'Failed to parse menu'
             return (None, None)

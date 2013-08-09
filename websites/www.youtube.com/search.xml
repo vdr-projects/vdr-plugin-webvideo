@@ -1,29 +1,24 @@
 <?xml version="1.0" encoding="UTF-8"?>
-
 <wvmenu>
-  <title>Youtube Search</title>
+  <title>YouTube Search</title>
+  <form action="http://www.youtube.com/results?search_query={q}&amp;filters={uploaded}%2C+{duration}&amp;lclk={uploaded}">
+    <ul>
+      <li>Search terms <input type="text" name="q"/></li>
 
-  <textfield name="q">
-    <label>Search terms</label>
-  </textfield>
+      <li>Uploaded
+      <label><input type="radio" name="uploaded" value=""/>Anytime</label>
+      <label><input type="radio" name="uploaded" value="today"/>Today</label>
+      <label><input type="radio" name="uploaded" value="week"/>This week</label>
+      <label><input type="radio" name="uploaded" value="month"/>This month</label>
+      </li>
 
-  <itemlist name="uploaded">
-    <label>Uploaded</label>
-    <item value="">Anytime</item>
-    <item value="d">Today</item>
-    <item value="w">This week</item>
-    <item value="m">This month</item>
-  </itemlist>
+      <li>Duration
+      <label><input type="radio" name="duration" value=""/>All</label>
+      <label><input type="radio" name="duration" value="short"/>Short</label>
+      <label><input type="radio" name="duration" value="long"/>Long</label>
+      </li>
 
-  <itemlist name="duration">
-    <label>Duration</label>
-    <item value="">All</item>
-    <item value="short">Short</item>
-    <item value="long">Long</item>
-  </itemlist>
-
-  <button>
-    <label>Search</label>
-    <submission>http://www.youtube.com/results?search_query={q}&amp;oq={q}&amp;uploaded={uploaded}&amp;search_duration={duration}</submission>
-  </button>
+      <li><input type="submit" value="Search"/></li>
+    </ul>
+  </form>
 </wvmenu>
