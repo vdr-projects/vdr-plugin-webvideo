@@ -133,6 +133,8 @@ PipeComponent *build_and_start_menu_pipe(const WebviRequest *self) {
   pipe_component_set_next(p2, p3);
   pipe_downloader_start(p1);
 
+  // TODO: the downloaded HTML should be converted into UTF-8
+
   return (PipeComponent *)p1;
 }
 

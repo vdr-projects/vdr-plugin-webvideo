@@ -63,6 +63,7 @@ GPtrArray *link_extractor_get_links(LinkExtractor *self) {
   tidyOptSetInt(tdoc, TidyWrapLen, 4096);
   tidyBufInit(&errbuf);
   tidySetErrorBuffer(tdoc, &errbuf);
+  tidySetInCharEncoding(tdoc, "utf8");
 
   err = tidyParseBuffer(tdoc, &self->html_buffer);
   if (err >= 0) {
