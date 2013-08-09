@@ -300,7 +300,7 @@ class WVClient:
         if streamurl is None:
             return True
         
-        self.download_stream(streamurl, streamtitle)
+        self.save_stream_to_file(streamurl, streamtitle)
         return True
 
     def get_stream_url_and_title(self, stream):
@@ -316,13 +316,13 @@ class WVClient:
             return (None, None)
 
         menu = MenuParser().parse_page(dlbuffer.getvalue())
-        if menu is None or len(menu) == 0:
+        if menu is None or len(menu) != 1:
             print 'Failed to parse menu'
             return (None, None)
 
         return (menu[0].activate(), menu[0].label)
 
-    def download_stream(self, url, title):
+    def save_stream_to_file(self, url, title):
         if is_rtmp_url(url):
             print 'FIXME: downloading RTMP stream'
             return
@@ -347,13 +347,9 @@ class WVClient:
         print 'Saved to %s' % destfilename
 
     def play_stream(self, ref):
-        streamurl = self.get_stream_url(ref)
-        if streamurl == '':
-            print 'Did not find URL'
-            return False
-
-        if streamurl.startswith('wvt://'):
-            print 'Streaming not supported, try downloading'
+        streamurl, streamtitle = self.get_stream_url_and_title(ref)
+        if streamurl is None:
+            print 'No URL for this stream!'
             return False
 
         # Found url, now find a working media player
@@ -378,45 +374,14 @@ class WVClient:
             try:
                 print 'Trying player: ' + ' '.join(playcmd)
                 retcode = subprocess.call(playcmd)
-                if retcode > 0:
-                    print 'Player failed with returncode', retcode
-                # else:
-                #     # After the player has finished, the library
-                #     # generates a read event on a control socket. When
-                #     # the client calls perform on the socket the
-                #     # library removes temporary files.
-                #     readfds, writefds = webvi.api.fdset()[1:3]
-                #     readyread, readywrite, readyexc = \
-                #         select.select(readfds, writefds, [], 0.1)
-                #     for fd in readyread:
-                #         webvi.api.perform(fd, WebviSelectBitmask.READ)
-                #     for fd in readywrite:
-                #         webvi.api.perform(fd, WebviSelectBitmask.WRITE)
-
+                if retcode == 0:
                     return True
+                else:
+                    print 'Player failed with returncode', retcode
             except OSError, err:
                 print 'Execution failed:', err
 
         return False
-
-    def get_stream_url(self, ref):
-        m = re.match(r'wvt:///([^/]+)/', ref)
-        if m is not None:
-            ref += '&' + self.get_quality_params(m.group(1), 'stream')
-
-        request = WebviRequest(self.webvi, ref)
-
-        dlbuffer = StringIOCallback()
-        request.set_read_callback(dlbuffer.write_and_return_length)
-        request.start()
-        status, err = self.execute_webvi(request)
-        del request
-        
-        if status != WebviState.FINISHED_OK:
-            print 'Download failed:', err
-            return ''
-
-        return dlbuffer.getvalue()
 
     def get_current_menu(self):
         if (self.history_pointer >= 0) and \
