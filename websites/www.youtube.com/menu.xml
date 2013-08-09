@@ -6,6 +6,6 @@
 
   <ul>
     <li><a href="wvt://www.youtube.com/search.xml" class="webvi">Search</a></li>
-    <li><a href="http://www.youtube.com/channels?feature=guide" class="webvi">Categories</a></li>
+    <li><a href="http://www.youtube.com/channels?feature=guide" class="webvi">Featured videos</a></li>
   </ul>
 </wvmenu>
