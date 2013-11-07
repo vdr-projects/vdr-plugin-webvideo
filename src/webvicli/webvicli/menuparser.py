@@ -90,15 +90,18 @@ class MenuParser:
         is_stream = False
         child = node.children
         while child:
-            if child.name == 'a':
+            if (child.name == 'a') and (child.prop('href') != ''):
                 label = get_content_unicode(child)
                 ref = child.prop('href')
                 is_stream = child.prop('class') != 'webvi'
+                break
             child = child.next
         return MenuItemLink(label, ref, is_stream)
 
     def parse_form(self, node):
         formurl = node.prop('action')
+        if formurl == '':
+            return []
         inputs = InputElements()
         child = node.children
         while child:
