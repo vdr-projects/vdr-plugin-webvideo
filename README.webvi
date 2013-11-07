@@ -18,22 +18,29 @@ supported sites.
 Installation
 ------------
 
+Install the following packages including development files for the
+libraries:
+
+cmake
+pkg-config
+quvi
+libcurl
+libxml2
+glib-2.0
+libtidy
+
 To compile and install the command line client (without VDR plugin;
 see main README if you have VDR installed) run
 
-make libwebvi
-make install-webvi
+mkdir objs
+cd objs
+cmake ..
+make
 
 By default the program is installed under /usr/local. You can specify
 a different installation location by
 
-make libwebvi PREFIX=/usr
-make install-webvi install-conf PREFIX=/usr
-
-If you use an alternative installation location, you may need to put
-PREFIX/lib/pythonX.Y/site-packages/ or
-PREFIX/lib/pythonX.Y/dist-packages/ to your PYTHONPATH environment
-variable.
+make PREFIX=/usr
 
 Running
 -------
