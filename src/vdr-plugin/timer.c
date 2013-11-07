@@ -14,6 +14,7 @@
 #include "common.h"
 #include "download.h"
 #include "config.h"
+#include "filedownloader.h"
 
 // --- cWebviTimer -----------------------------------------------
 

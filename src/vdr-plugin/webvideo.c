@@ -23,6 +23,7 @@
 #include "player.h"
 #include "common.h"
 #include "timer.h"
+#include "filedownloader.h"
 
 const char *VERSION               = "0.5.0";
 static const char *DESCRIPTION    = trNOOP("Download video files from the web");
@@ -86,7 +87,7 @@ cPluginWebvideo::cPluginWebvideo(void)
 cPluginWebvideo::~cPluginWebvideo()
 {
   // Clean up after yourself!
-  webvi_cleanup(0);
+  webvi_cleanup();
 }
 
 const char *cPluginWebvideo::CommandLineHelp(void)
@@ -234,6 +235,7 @@ void cPluginWebvideo::HandleFinishedRequests(void)
   bool forceStatusUpdate = false;
   cMenuRequest *req;
   cFileDownloadRequest *dlreq;
+  cStreamUrlRequest *streamreq;
   cString streamurl;
   cWebviTimer *timer;
   cString timermsg;
@@ -269,11 +271,10 @@ void cPluginWebvideo::HandleFinishedRequests(void)
 	break;
 
       case REQT_STREAM:
-        streamurl = req->GetResponse();
+        streamreq = dynamic_cast<cStreamUrlRequest *>(req);
+        streamurl = streamreq->getStreamUrl();
         if (streamurl[0] == '\0')
           Skins.Message(mtError, tr("Streaming failed: no URL"));
-        else if (strncmp(streamurl, "wvt://", 6) == 0)
-          Skins.Message(mtError, tr("Streaming not supported, try downloading"));
         else if (!StartStreaming(streamurl))
           Skins.Message(mtError, tr("Failed to launch media player"));
 	break;
@@ -367,18 +368,19 @@ cString cPluginWebvideo::Active(void)
 cOsdObject *cPluginWebvideo::MainMenuAction(void)
 {
   // Perform the action when selected from the main VDR menu.
-  const char *mainMenuReference = "wvt:///?srcurl=mainmenu";
+  const char *mainMenuReference = "wvt://mainmenu";
   const char *placeholderMenu = "<wvmenu><title>Webvideo</title></wvmenu>";
   const char *statusmsg = NULL;
   struct timespec ts;
   ts.tv_sec = 0;
   ts.tv_nsec = 100*1000*1000; // 100 ms
 
-  menuPointers.navigationMenu = new cNavigationMenu(&history, summaries);
+  menuPointers.navigationMenu = \
+    new cNavigationMenu(&history, summaries);
 
   cHistoryObject *hist = history.Home();
   if (!hist) {
-    cWebviThread::Instance().AddRequest(new cMenuRequest(0, mainMenuReference));
+    cWebviThread::Instance().AddRequest(new cMenuRequest(0, REQT_MENU, mainMenuReference));
     cHistoryObject *placeholder = new cHistoryObject(placeholderMenu, mainMenuReference, 0);
     history.TruncateAndAdd(placeholder);
 
@@ -462,6 +464,8 @@ cString cPluginWebvideo::CreateWvtRef(const char *url) {
   cString domain = parseDomain(url);
   if (strcmp(domain, "") == 0)
     return "";
+
+  // FIXME!
   
   char *encoded = URLencode(url);
   cString res = cString::sprintf("wvt:///%s/videopage.xsl?srcurl=%s",

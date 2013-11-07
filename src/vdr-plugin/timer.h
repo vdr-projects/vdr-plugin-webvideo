@@ -21,6 +21,7 @@
 #define MAX_TIMER_HISTORY_SIZE 2000
 
 class cWebviTimerManager;
+class iAsyncFileDownloaderManager;
 
 // --- cWebviTimer -----------------------------------------------
 

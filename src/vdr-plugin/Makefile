@@ -22,12 +22,13 @@ LOCDIR = $(call PKGCFG,locdir)
 PLGCFG = $(call PKGCFG,plgcfg)
 #
 TMPDIR ?= /tmp
+LIBWEBVIDIR ?= $(shell find ../.. -name libwebvi.so -printf "%h\n" | head -1)
 
 ### The compiler options:
 
 override CFLAGS   += $(call PKGCFG,cflags) $(shell xml2-config --cflags)
 override CXXFLAGS += $(call PKGCFG,cxxflags) $(shell xml2-config --cflags)
-override LDFLAGS  += $(shell xml2-config --libs) -L../libwebvi -lwebvi
+override LDFLAGS  += $(shell xml2-config --libs) -L$(LIBWEBVIDIR) -lwebvi
 
 export CFLAGS
 export CXXFLAGS

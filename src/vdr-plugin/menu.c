@@ -8,6 +8,7 @@
 
 #include <stdlib.h>
 #include <time.h>
+#include <assert.h>
 #include <vdr/skins.h>
 #include <vdr/tools.h>
 #include <vdr/i18n.h>
@@ -26,6 +27,567 @@
 
 cCharSetConv csc = cCharSetConv("UTF-8", cCharSetConv::SystemCharacterTable());
 struct MenuPointers menuPointers;
+
+typedef enum {
+  INPUT_TYPE_TEXT,
+  INPUT_TYPE_RADIO,
+  INPUT_TYPE_SUBMIT,
+} InputItemType;
+
+// --- cURITemplate ----------------------------------------------
+
+class cURITemplate {
+private:
+  static const char *GetValue(const char *key, const cStringList& keys,
+                              const cStringList& values);
+public:
+  static cString Substitute(const cString& uritemplate, const cStringList& keys,
+                            const cStringList& values);
+};
+
+cString cURITemplate::Substitute(const cString& uritemplate,
+                                 const cStringList& keys,
+                                 const cStringList& values)
+{
+  if ((const char *)uritemplate == NULL)
+    return "";
+
+  cVector<char> substituted(2*strlen(uritemplate));
+  const char *currentKey = NULL;
+  const char *c = uritemplate;
+  while (*c) {
+    if (currentKey) {
+      if (*c == '}') {
+        char *key = strndup(currentKey+1, c - (currentKey+1));
+        const char *value = cURITemplate::GetValue(key, keys, values);
+        if (value) {
+          for (const char *v = value; *v; v++) {
+            if (*v == ' ') {
+              substituted.Append('+');
+            } else {
+              substituted.Append(*v);
+            }
+          }
+        } else {
+          for (const char *v = currentKey; v <= c; v++) {
+            substituted.Append(*v);
+          }
+        }
+        currentKey = NULL;
+        free(key);
+      }
+    } else if (*c == '{') {
+      currentKey = c;
+    } else {
+      substituted.Append(*c);
+    }
+
+    c++;
+  }
+
+  if (currentKey) {
+    for (const char *v=currentKey; *v; v++) {
+      substituted.Append(*v);
+    }
+  }
+
+  return cString(strdup(&substituted[0]), true);
+}
+
+const char *cURITemplate::GetValue(const char *key,
+                                   const cStringList& keys,
+                                   const cStringList& values)
+{
+  int i = keys.Find(key);
+  if ((i >= 0) && (i < values.Size())) {
+    return values[i];
+  } else {
+    return NULL;
+  }
+}
+
+// --- cEditControl ----------------------------------------------
+
+class cEditControl {
+public:
+  virtual const char *Key() = 0;
+  virtual const char *Value() = 0;
+};
+
+/* // --- cFormControlWrapper --------------------------------------- */
+
+/* class cFormControlWrapper { */
+/* public: */
+/*   virtual const char *Key() = 0; */
+/*   virtual const char *Value() = 0; */
+/*   virtual cOsdItem *CreateOSDItem() = 0; */
+/* }; */
+
+/* // --- cTextFieldWrapper ----------------------------------------- */
+
+/* class cTextFieldWrapper : public cFormControlWrapper { */
+/* private: */
+/*   char *value; */
+/*   int valueLen; */
+/*   char *key; */
+/*   char *name; */
+/*   char *allowed; */
+/* public: */
+/*   cTextFieldWrapper(const char *Name, const char *Key, int MaxLength, const char *Allowed = NULL); */
+/*   ~cTextFieldWrapper(); */
+/*   virtual const char *Key() { return key; } */
+/*   virtual const char *Value(); */
+/*   virtual cOsdItem *CreateOSDItem(); */
+/* }; */
+
+/* cTextFieldWrapper::cTextFieldWrapper(const char *Name, const char *Key, */
+/*                                      int MaxLength, const char *Allowed = NULL) */
+/* { */
+/*   valueLen = MaxLength; */
+/*   value = malloc(valueLen + 1); */
+/*   *value = '\0'; */
+/*   key = strdup(Key ? Key : ""); */
+/*   name = strdup(Name ? Name : ""); */
+/*   allowed = Allowed ? strdup(Allowed) : NULL; */
+/* } */
+
+/* cTextFieldWrapper::~cTextFieldWrapper() { */
+/*   free(value); */
+/*   free(key); */
+/*   free(name); */
+/*   if (allowed) */
+/*     free(allowed); */
+/* } */
+
+/* cMenuEditStrItem *cTextFieldWrapper::CreateOSDItem() { */
+/*   return new cMenuEditStrItem(name, value, valueLen, allowed); */
+/* } */
+
+/* const char *cTextFieldWrapper::Value() { */
+/*   return value; */
+/* } */
+
+/* // --- cSelectionWrapper ----------------------------------------- */
+
+/* class cSelectionWrapper : public cFormControlWrapper { */
+/* private: */
+/*   char *key; */
+/*   char **labels; */
+/*   int numLabels; */
+/*   cStringList values; */
+/*   int selectedIndex; */
+/*   char *name; */
+/* public: */
+/*   cSelectionWrapper(const char *Name, const char *Key, */
+/*                     const cStringList& Labels, const cStringList& Values); */
+/*   ~cSelectionWrapper(); */
+/*   virtual const char *Key() { return key; } */
+/*   virtual const char *Value(); */
+/*   virtual cOsdItem *CreateOSDItem(); */
+/* }; */
+
+/* cSelectionWrapper::cSelectionWrapper(const char *Name, const char *Key, */
+/*                                      const cStringList& LabelStrings, */
+/*                                      const cStringList& ValueStrings) */
+/* { */
+/*   name = strdup(Name ? Name : ""); */
+/*   key = strdup(Key ? Key : ""); */
+/*   selectedIndex = 0; */
+/*   numLabels = LabelStrings.Size(), */
+/*   labels = malloc(numLabels*sizeof(char *)); */
+/*   for (int i=0; i<numLabels; i++) { */
+/*     labels[i] = strdup(LabelStrings[i]); */
+/*   } */
+/*   for (int i=0; i<ValueStrings.Size(); i++) { */
+/*     values.Append(ValueStrings[i]); */
+/*   } */
+/* } */
+
+/* cSelectionWrapper::~cSelectionWrapper() { */
+/*   for (int i=0; i<numValues; i++) { */
+/*     free(labels[i]); */
+/*   } */
+/*   free(labels); */
+/*   free(key); */
+/*   free(name); */
+/* } */
+
+/* cOsdItem *cSelectionWrapper::CreateOSDItem() { */
+/*   return new cMenuEditStraItem(name, &selectedIndex, numLabels, labels); */
+/* } */
+
+/* const char *cSelectionWrapper::Value() { */
+/*   if (selectedIndex < values.Size()) */
+/*     return values[selectedIndex]; */
+/*   else */
+/*     return ""; */
+/* } */
+
+/* // --- cMenuTextField -------------------------------------------- */
+
+/* class cMenuTextField : public cMenuEditStrItem, public cEditControl { */
+/* private: */
+/*   //char *textBuffer; */
+/*   char *keyName; */
+/* public: */
+/*   cMenuTextField(const char *Name, const char *Key, int MaxLength, const char *Allowed = NULL); */
+/*   ~cMenuTextField(); */
+
+/*   const char *Key(); */
+/*   const char *Value(); */
+/* }; */
+
+/* cMenuTextField::cMenuTextField(const char *Name, const char *Key, int MaxLength, const char *Allowed) */
+/* : cMenuEditStrItem(Name, new uint[MaxLength], MaxLength, Allowed) */
+/* { */
+/*   keyName = strdup(Key); */
+/* } */
+
+/* cMenuTextField::~cMenuTextField() { */
+/*   free(keyName); */
+
+/*   // FIXME: delete value */
+/* } */
+
+/* const char *cMenuTextField::Key() { */
+/*   return keyName; */
+/* } */
+
+/* const char *cMenuTextField::Value() { */
+/*   // FIXME */
+/* } */
+
+// --- cOsdSubmitButton ------------------------------------------
+
+class cOsdSubmitButton : public cOsdItem, public cMenuLink {
+private:
+  cVector<cEditControl *> editControls;
+  cString substituted;
+  char *uriTemplate;
+
+public:
+  cOsdSubmitButton(const char *Text, eOSState State = osUnknown, bool Selectable = true);
+
+  void SetURITemplate(const char *newTemplate);
+  void ClearEditControls();
+  void AttachEditControl(cEditControl *control);
+
+  const char *GetURL();
+  bool HasStream();
+};
+
+cOsdSubmitButton::cOsdSubmitButton(const char *Text, eOSState State, bool Selectable)
+: cOsdItem(Text, State, Selectable), uriTemplate(NULL)
+{
+}
+
+void cOsdSubmitButton::SetURITemplate(const char *newTemplate) {
+  if (uriTemplate)
+    free(uriTemplate);
+
+  if (newTemplate)
+    uriTemplate = strdup(newTemplate);
+  else
+    uriTemplate = NULL;
+}
+
+void cOsdSubmitButton::ClearEditControls() {
+  editControls.Clear();
+}
+
+void cOsdSubmitButton::AttachEditControl(cEditControl *control) {
+  editControls.Append(control);
+}
+
+const char *cOsdSubmitButton::GetURL() {
+  if (uriTemplate) {
+    cStringList keys;
+    cStringList values;
+    for (int i=0; i<editControls.Size(); i++) {
+      keys.Append(strdup(editControls[i]->Key()));
+      values.Append(strdup(editControls[i]->Value()));
+    }
+    substituted = cURITemplate::Substitute(uriTemplate, keys, values);
+  } else {
+    substituted = "";
+  }
+
+  return substituted;
+}
+
+bool cOsdSubmitButton::HasStream() {
+  return false;
+}
+
+// --- cFormItem -------------------------------------------------
+
+class cFormItem : public cListObject {
+private:
+  InputItemType type;
+  char *name;
+  char *mainLabel;
+protected:
+  cFormItem(InputItemType _type, const char *_name, const char *_mainLabel);
+public:
+  virtual ~cFormItem();
+  InputItemType GetType();
+  const char *GetName();
+  virtual const char *GetLabel();
+  virtual void AppendValue(const char *value, const char *label);
+  virtual cOsdItem *CreateOsdItem() = 0;
+};
+
+cFormItem::cFormItem(InputItemType _type, const char *_name, const char *_mainLabel) {
+  type = _type;
+  name = strdup(_name ? _name : "");
+  mainLabel = strdup(_mainLabel ? _mainLabel : "");
+}
+
+cFormItem::~cFormItem() {
+  if (name)
+    free(name);
+  if (mainLabel)
+    free(mainLabel);
+}
+
+InputItemType cFormItem::GetType() {
+  return type;
+}
+
+const char *cFormItem::GetName() {
+  return name;
+}
+
+const char *cFormItem::GetLabel() {
+  return mainLabel;
+}
+
+void cFormItem::AppendValue(const char *value, const char *label) {
+  // default implementation does nothing
+}
+
+// --- cFormItemText ---------------------------------------------
+
+class cFormItemText : public cFormItem, public cEditControl {
+private:
+  char *value;
+  int valueLen;
+  //char *key; // name? FIXME
+  char *allowed;
+public:
+  cFormItemText(const char *_name, const char *_mainLabel, int MaxLength, const char *Allowed = NULL);
+  ~cFormItemText();
+  const char *Key();
+  const char *Value();
+  cOsdItem *CreateOsdItem();
+};
+
+cFormItemText::cFormItemText(const char *_name, const char *_mainLabel, int MaxLength, const char *Allowed)
+: cFormItem(INPUT_TYPE_TEXT, _name, _mainLabel)
+{
+  valueLen = MaxLength;
+  value = (char *)malloc(valueLen + 1);
+  *value = '\0';
+  //key = strdup(Key ? Key : "");
+  allowed = Allowed ? strdup(Allowed) : NULL;
+}
+
+cFormItemText::~cFormItemText() {
+  free(value);
+  //free(key);
+  if (allowed)
+    free(allowed);
+}
+
+const char *cFormItemText::Key() {
+  return GetName();
+}
+
+const char *cFormItemText::Value() {
+  return value;
+}
+
+cOsdItem *cFormItemText::CreateOsdItem() {
+  return new cMenuEditStrItem(GetName(), value, valueLen, allowed);
+}
+
+// --- cFormItemRadio --------------------------------------------
+
+class cFormItemRadio : public cFormItem, public cEditControl {
+private:
+  cStringList values;
+  cStringList labels;
+
+  //char *key; // name? FIXME
+  char **labelsArray;
+  int labelsArraySize;
+  int selectedIndex;
+
+public:
+  cFormItemRadio(const char *_name, const char *_mainLabel);
+  ~cFormItemRadio();
+  const char *Key();
+  const char *Value();
+  void AppendValue(const char *value, const char *label);
+  cOsdItem *CreateOsdItem();
+};
+
+cFormItemRadio::cFormItemRadio(const char *_name, const char *_mainLabel)
+: cFormItem(INPUT_TYPE_RADIO, _name, _mainLabel)
+{
+  labelsArray = NULL;
+  labelsArraySize = 0;
+  selectedIndex = 0;
+}
+
+cFormItemRadio::~cFormItemRadio() {
+  if (labelsArray) {
+    for (int i=0; i<labelsArraySize; i++) {
+      free(labelsArray[i]);
+    }
+    free(labelsArray);
+  }
+}
+
+void cFormItemRadio::AppendValue(const char *value, const char *label) {
+  values.Append(strdup(value ? value : ""));
+  labels.Append(strdup(label ? label : ""));
+}
+
+const char *cFormItemRadio::Key() {
+  return GetName();
+}
+
+const char *cFormItemRadio::Value() {
+  if (selectedIndex < values.Size())
+    return values[selectedIndex];
+  else
+    return "";
+}
+
+cOsdItem *cFormItemRadio::CreateOsdItem() {
+  if (!labelsArray) {
+    labelsArray = (char **)malloc(labels.Size()*sizeof(char *));
+    for (int i=0; i<labels.Size(); i++) {
+      labelsArray[i] = strdup(labels[i]);
+    }
+  }
+
+  return new cMenuEditStraItem(GetName(), &selectedIndex,
+                               labelsArraySize, labelsArray);
+}
+
+// --- cFormItemSubmit -------------------------------------------
+
+class cFormItemSubmit : public cFormItem {
+private:
+  char *value;
+public:
+  cFormItemSubmit(const char *_name, const char *_mainLabel);
+  ~cFormItemSubmit();
+  const char *GetLabel();
+  void AppendValue(const char *value, const char *label);
+  cOsdItem *CreateOsdItem();
+};
+
+cFormItemSubmit::cFormItemSubmit(const char *_name, const char *_mainLabel)
+: cFormItem(INPUT_TYPE_SUBMIT, _name, _mainLabel)
+{
+  value = strdup("");
+}
+
+cFormItemSubmit::~cFormItemSubmit() {
+  if (value)
+    free(value);
+}
+
+const char *cFormItemSubmit::GetLabel() {
+  return value;
+}
+
+void cFormItemSubmit::AppendValue(const char *_value, const char *_label) {
+  if (value)
+    free(value);
+  value = strdup(_value ? _value : "");
+}
+
+cOsdItem *cFormItemSubmit::CreateOsdItem() {
+  return new cOsdSubmitButton(csc.Convert(GetLabel()));
+}
+
+// --- cFormItemList ---------------------------------------------
+
+cFormItem *cFormItemList::FindByName(const char *name) {
+  cFormItem *item = inputItems.First();
+  while (item) {
+    if (strcmp(item->GetName(), name) == 0) {
+      return item;
+    }
+    item = inputItems.Next(item);
+  }
+
+  return NULL;
+}
+
+void cFormItemList::AddInputItem(const char *name, const char *type,
+                                 const char *mainLabel, const char *value,
+                                 const char *valueLabel)
+{
+  if (!name || !type)
+    return;
+
+  cFormItem *item = FindByName(name);
+  if (item) {
+    item->AppendValue(value, valueLabel);
+  } else {
+    cFormItem *item = FormItemFactory(type, name, mainLabel);
+    item->AppendValue(value, valueLabel);
+    inputItems.Add(item);
+  }
+}
+
+cFormItem *cFormItemList::FormItemFactory(const char *type,
+                                          const char *name,
+                                          const char *mainLabel) {
+  if (strcmp(type, "radio") == 0) {
+    return new cFormItemRadio(name, mainLabel);
+  } else if (strcmp(type, "submit") == 0) {
+    return new cFormItemSubmit(name, mainLabel);
+  } else {
+    if (strcmp(type, "text") != 0)
+      warning("Unexpected <input> type %s", type);
+    return new cFormItemText(name, mainLabel, 255);
+  }
+}
+
+void cFormItemList::CreateAndAppendOsdItems(cList<cOsdItem> *destination,
+                                            const char *uriTemplate) {
+  cVector<cEditControl *> editControls;
+  cVector<cOsdSubmitButton *> submitButtons;
+  cFormItem *inputItem;
+  for (inputItem=inputItems.First(); inputItem; inputItems.Next(inputItem)) {
+    cOsdItem *osdItem = inputItem->CreateOsdItem();
+    if (inputItem->GetType() == INPUT_TYPE_SUBMIT) {
+      assert(dynamic_cast<cOsdSubmitButton *>(osdItem));
+      submitButtons.Append(static_cast<cOsdSubmitButton *>(osdItem));
+    } else {
+      cEditControl *edit = dynamic_cast<cEditControl *>(inputItem);
+      assert(edit);
+      editControls.Append(edit);
+    }
+
+    destination->Add(osdItem);
+  }
+
+  for (int i=0; i<submitButtons.Size(); i++) {
+    cOsdSubmitButton *submitButton = submitButtons[i];
+    submitButton->SetURITemplate(uriTemplate);
+    submitButton->ClearEditControls();
+    for (int j=0; j<editControls.Size(); j++) {
+      submitButton->AttachEditControl(editControls[j]);
+    }
+  }
+}
 
 // --- cXMLMenu --------------------------------------------------
 
@@ -52,7 +614,7 @@ bool cXMLMenu::Deserialize(const char *xml) {
 
   while (node) {
     if (node->type == XML_ELEMENT_NODE) {
-      if (!CreateItemFromTag(doc, node)) {
+      if (!ParseRootChild(doc, node)) {
         warning("Failed to parse menu tag: %s", (char *)node->name);
       }
     }
@@ -73,14 +635,11 @@ int cXMLMenu::Load(const char *xmlstr) {
 
 // --- cNavigationMenu -----------------------------------------------------
 
-cNavigationMenu::cNavigationMenu(cHistory *History,
+cNavigationMenu::cNavigationMenu(cHistory *_history,
                                  cProgressVector& dlsummaries)
-  : cXMLMenu("", 25), summaries(dlsummaries)
+  : cXMLMenu("", 25), summaries(dlsummaries),
+    title(NULL), reference(NULL), shortcutMode(0), history(_history)
 {
-  title = NULL;
-  reference = NULL;
-  shortcutMode = 0;
-  history = History;
   UpdateHelp();
 }
 
@@ -91,28 +650,85 @@ cNavigationMenu::~cNavigationMenu() {
     free(reference);
 }
 
-bool cNavigationMenu::CreateItemFromTag(xmlDocPtr doc, xmlNodePtr node) {
-  if (!xmlStrcmp(node->name, BAD_CAST "link")) {
-    NewLinkItem(doc, node);
-    return true;
-  } else if (!xmlStrcmp(node->name, BAD_CAST "textfield")) {
-    NewTextField(doc, node);
-    return true;
-  } else if (!xmlStrcmp(node->name, BAD_CAST "itemlist")) {
-    NewItemList(doc, node);
-    return true;
-  } else if (!xmlStrcmp(node->name, BAD_CAST "textarea")) {
-    NewTextArea(doc, node);
-    return true;
-  } else if (!xmlStrcmp(node->name, BAD_CAST "button")) {
-    NewButton(doc, node);
-    return true;
+bool cNavigationMenu::ParseRootChild(xmlDocPtr doc, xmlNodePtr node) {
+  if (!xmlStrcmp(node->name, BAD_CAST "ul")) {
+    ParseUL(doc, node);
+  } else if (!xmlStrcmp(node->name, BAD_CAST "form")) {
+    ParseForm(doc, node);
   } else if (!xmlStrcmp(node->name, BAD_CAST "title")) {
     NewTitle(doc, node);
-    return true;
+  } else {
+    return false;
   }
 
-  return false;
+  return true;
+}
+
+void cNavigationMenu::ParseUL(xmlDocPtr doc, xmlNodePtr node) {
+  xmlNodePtr child = node->children;
+  while (child) {
+    if (xmlStrEqual(child->name, BAD_CAST "il")) {
+      CreateLinkElement(doc, child);
+    }
+    child = child->next;
+  }
+}
+
+void cNavigationMenu::CreateLinkElement(xmlDocPtr doc, xmlNodePtr node) {
+  xmlNodePtr child = node->children;
+
+  while (child) {
+    if (xmlStrEqual(child->name, BAD_CAST "a")) {
+      xmlChar *href = xmlGetProp(child, BAD_CAST "href");
+      if (href) {
+        xmlChar *title = xmlNodeListGetString(doc, child->xmlChildrenNode, 1);
+        if (!title) {
+          title = xmlCharStrdup("???");
+        }
+        xmlChar *cls = xmlGetProp(child, BAD_CAST "class");
+        bool isStream = !cls || !xmlStrEqual(cls, BAD_CAST "webvi");
+
+        CreateAndAddOSDLink((char *)title, (char *)href, isStream);
+
+        if (cls)
+          xmlFree(cls);
+        xmlFree(title);
+        xmlFree(href);
+      }
+
+      break;
+    }
+
+    child = child->next;
+  }
+}
+
+void cNavigationMenu::CreateAndAddOSDLink(const char *title, const char *href,
+                                          bool isStream) {
+  char *strippedTitle = compactspace(strdup(title));
+  const char *titleconv = csc.Convert(strippedTitle);
+  free(strippedTitle);
+  strippedTitle = NULL;
+  cOsdItem *item = new cOsdItem(titleconv);
+  cSimpleLink *objlinkdata = NULL;
+  cSimpleLink *linkdata = NULL;
+  if (href)
+    linkdata = new cSimpleLink(href);
+  if (isStream) {
+    // stream link
+    objlinkdata = new cSimpleLink(href);
+  } else {
+    // navigation link
+    char *bracketed = (char *)malloc((strlen(titleconv)+3)*sizeof(char));
+    if (bracketed) {
+      bracketed[0] = '\0';
+      strcat(bracketed, "[");
+      strcat(bracketed, titleconv);
+      strcat(bracketed, "]");
+      item->SetText(bracketed, false);
+    }
+  }
+  AddLinkItem(item, linkdata, objlinkdata);
 }
 
 void cNavigationMenu::AddLinkItem(cOsdItem *item,
@@ -131,212 +747,67 @@ void cNavigationMenu::AddLinkItem(cOsdItem *item,
     streams.Append(NULL);
 }
 
-void cNavigationMenu::NewLinkItem(xmlDocPtr doc, xmlNodePtr node) {
-  // label, ref and object tags
-  xmlChar *itemtitle = NULL, *ref = NULL, *streamref = NULL;
-
-  node = node->xmlChildrenNode;
-  while (node) {
-    if (!xmlStrcmp(node->name, BAD_CAST "label")) {
-      if (itemtitle)
-        xmlFree(itemtitle);
-      itemtitle = xmlNodeListGetString(doc, node->xmlChildrenNode, 1);
-    } else if (!xmlStrcmp(node->name, BAD_CAST "ref")) {
-      if (ref)
-        xmlFree(ref);
-      ref = xmlNodeListGetString(doc, node->xmlChildrenNode, 1);
-    } else if (!xmlStrcmp(node->name, BAD_CAST "stream")) {
-      if (streamref)
-        xmlFree(streamref);
-      streamref = xmlNodeListGetString(doc, node->xmlChildrenNode, 1);
+void cNavigationMenu::ParseForm(xmlDocPtr doc, xmlNodePtr node) {
+  xmlChar *urltemplate = xmlGetProp(node, BAD_CAST "action");
+  xmlNodePtr child = node->children;
+  while (child) {
+    if (xmlStrEqual(child->name, BAD_CAST "li")) {
+      ParseFormItem(formItems, doc, child);
     }
-    node = node->next;
+    child = child->next;
   }
-  if (!itemtitle)
-    itemtitle = xmlCharStrdup("???");
 
-  const char *titleconv = csc.Convert((char *)itemtitle);
-  cOsdItem *item = new cOsdItem(titleconv);
-  cSimpleLink *objlinkdata = NULL;
-  cSimpleLink *linkdata = NULL;
-  if (ref)
-    linkdata = new cSimpleLink((char *)ref);
-  if (streamref) {
-    // media object
-    objlinkdata = new cSimpleLink((char *)streamref);
-  } else {
-    // navigation link
-    char *bracketed = (char *)malloc((strlen(titleconv)+3)*sizeof(char));
-    if (bracketed) {
-      bracketed[0] = '\0';
-      strcat(bracketed, "[");
-      strcat(bracketed, titleconv);
-      strcat(bracketed, "]");
-      item->SetText(bracketed, false);
-    }
-  }
-  AddLinkItem(item, linkdata, objlinkdata);
+  formItems.CreateAndAppendOsdItems(this, (const char *)urltemplate);
 
-  xmlFree(itemtitle);
-  if (ref)
-    xmlFree(ref);
-  if (streamref)
-    xmlFree(streamref);
+  xmlFree(urltemplate);
 }
 
-void cNavigationMenu::NewTextField(xmlDocPtr doc, xmlNodePtr node) {
-  // name attribute
-  xmlChar *name = xmlGetProp(node, BAD_CAST "name");
-  cHistoryObject *curhistpage = history->Current();
-
-  // label tag
-  xmlChar *text = NULL;
-  node = node->xmlChildrenNode;
-  while (node) {
-    if (!xmlStrcmp(node->name, BAD_CAST "label")) {
-      if (text)
-        xmlFree(text);
-      text = xmlNodeListGetString(doc, node->xmlChildrenNode, 1);
-    }
-    node = node->next;
-  }
-  if (!text)
-    text = xmlCharStrdup("???");
-
-  cTextFieldData *data = curhistpage->GetTextFieldData((char *)name);
-  cMenuEditStrItem *item = new cMenuEditStrItem(csc.Convert((char *)text), 
-                                                data->GetValue(), 
-                                                data->GetLength());
-  AddLinkItem(item, NULL, NULL);
-
-  free(text);
-  if (name)
-    xmlFree(name);
-}
-
-void cNavigationMenu::NewItemList(xmlDocPtr doc, xmlNodePtr node) {
-  // name attribute
-  xmlChar *name = xmlGetProp(node, BAD_CAST "name");
-  cHistoryObject *curhistpage = history->Current();
-
-  // label and item tags
-  xmlChar *text = NULL;
-  cStringList items;
-  cStringList itemvalues;
-  node = node->xmlChildrenNode;
-  while (node) {
-    if (!xmlStrcmp(node->name, BAD_CAST "label")) {
-      if (text)
-        xmlFree(text);
-      text = xmlNodeListGetString(doc, node->xmlChildrenNode, 1);
-    } else if (!xmlStrcmp(node->name, BAD_CAST "item")) {
-      xmlChar *str = xmlNodeListGetString(doc, node->xmlChildrenNode, 1);
-      if (!str)
-        str = xmlCharStrdup("???");
-      xmlChar *strvalue = xmlGetProp(node, BAD_CAST "value");
-      if (!strvalue)
-        strvalue = xmlCharStrdup("");
-
-      items.Append(strdup((char *)str));
-      itemvalues.Append(strdup((char *)strvalue));
-
-      xmlFree(str);
-      xmlFree(strvalue);
-    }
-    node = node->next;
-  }
-  if (!text)
-    text = xmlCharStrdup("???");
-
-  cItemListData *data = curhistpage->GetItemListData((const char *)name,
-                                                     items,
-                                                     itemvalues);
-
-  cMenuEditStraItem *item = new cMenuEditStraItem(csc.Convert((char *)text), 
-                                                  data->GetValuePtr(), 
-                                                  data->GetNumStrings(), 
-                                                  data->GetStrings());
-  AddLinkItem(item, NULL, NULL);
-
-  xmlFree(text);
-  if (name)
-    xmlFree(name);
-}
-
-void cNavigationMenu::NewTextArea(xmlDocPtr doc, xmlNodePtr node) {
-  // label tag
-  xmlChar *itemtitle = NULL;
-  node = node->xmlChildrenNode;
-  while (node) {
-    if (!xmlStrcmp(node->name, BAD_CAST "label")) {
-      if (itemtitle)
-        xmlFree(itemtitle);
-      itemtitle = xmlNodeListGetString(doc, node->xmlChildrenNode, 1);
-    }
-    node = node->next;
-  }
-  if (!itemtitle)
-    return;
-
-  const cFont *font = cFont::GetFont(fontOsd);
-  cTextWrapper tw(csc.Convert((char *)itemtitle), font, cOsd::OsdWidth());
-  for (int i=0; i < tw.Lines(); i++) {
-    AddLinkItem(new cOsdItem(tw.GetLine(i), osUnknown, false), NULL, NULL);
-  }
-
-  xmlFree(itemtitle);
-}
-
-void cNavigationMenu::NewButton(xmlDocPtr doc, xmlNodePtr node) {
-  // label and submission tags
-  xmlChar *itemtitle = NULL, *submission = NULL;
-  cHistoryObject *curhistpage = history->Current();
-  xmlChar *encoding = NULL;
-
-  node = node->xmlChildrenNode;
-  while (node) {
-    if (!xmlStrcmp(node->name, BAD_CAST "label")) {
-      if (itemtitle)
-        xmlFree(itemtitle);
-      itemtitle = xmlNodeListGetString(doc, node->xmlChildrenNode, 1);
-    } else if (!xmlStrcmp(node->name, BAD_CAST "submission")) {
-      if (submission)
-        xmlFree(submission);
-      submission = xmlNodeListGetString(doc, node->xmlChildrenNode, 1);
-
-      xmlChar *enc = xmlGetProp(node, BAD_CAST "encoding");
-      if (enc) {
-        if (encoding)
-          xmlFree(encoding);
-        encoding = enc;
+void cNavigationMenu::ParseFormItem(cFormItemList& formItems, xmlDocPtr doc,
+                                    xmlNodePtr node) {
+  xmlChar *mainLabel = xmlNodeListGetString(doc, node->xmlChildrenNode, 1);
+  if (!mainLabel)
+    mainLabel = xmlCharStrdup("???");
+  xmlNodePtr child = node->children;
+  while (child) {
+    if (xmlStrEqual(child->name, BAD_CAST "input")) {
+      xmlChar *type = xmlGetProp(child, BAD_CAST "type");
+      xmlChar *name = xmlGetProp(child, BAD_CAST "name");
+      xmlChar *value = xmlGetProp(child, BAD_CAST "value");
+      formItems.AddInputItem((const char *)name, (const char *)type,
+                             (const char*)mainLabel, (const char*)value, NULL);
+      if (value)
+        xmlFree(value);
+      if (name)
+        xmlFree(name);
+      if (type)
+        xmlFree(type);
+      
+    } else if (xmlStrEqual(child->name, BAD_CAST "label")) {
+      xmlChar *itemLabel = xmlNodeListGetString(doc, child->xmlChildrenNode, 1);
+      xmlNodePtr inputNode = child->children;
+      while (inputNode) {
+        if (xmlStrEqual(inputNode->name, BAD_CAST "input")) {
+          xmlChar *type = xmlGetProp(inputNode, BAD_CAST "type");
+          xmlChar *name = xmlGetProp(inputNode, BAD_CAST "name");
+          xmlChar *value = xmlGetProp(inputNode, BAD_CAST "value");
+          formItems.AddInputItem((const char*)name, (const char*)type,
+                                 (const char *)mainLabel, (const char*)value,
+                                 (const char*)itemLabel);
+          if (value)
+            xmlFree(value);
+          if (name)
+            xmlFree(name);
+          if (type)
+            xmlFree(type);
+        }
+        inputNode = inputNode->next;
       }
+      if (itemLabel)
+        xmlFree(itemLabel);
     }
-    node = node->next;
+    child = child->next;
   }
-  if (!itemtitle)
-    itemtitle = xmlCharStrdup("???");
-
-  cSubmissionButtonData *data = \
-    new cSubmissionButtonData((char *)submission, curhistpage,
-                              (char *)encoding);
-  const char *titleconv = csc.Convert((char *)itemtitle); // do not free
-  char *newtitle = (char *)malloc((strlen(titleconv)+3)*sizeof(char));
-  if (newtitle) {
-    newtitle[0] = '\0';
-    strcat(newtitle, "[");
-    strcat(newtitle, titleconv);
-    strcat(newtitle, "]");
-
-    cOsdItem *item = new cOsdItem(newtitle);
-    AddLinkItem(item, data, NULL);
-    free(newtitle);
-  }
-
-  xmlFree(itemtitle);
-  if (submission)
-    xmlFree(submission);
-  if (encoding)
-    xmlFree(encoding);
+  xmlFree(mainLabel);
 }
 
 void cNavigationMenu::NewTitle(xmlDocPtr doc, xmlNodePtr node) {
@@ -347,6 +818,7 @@ void cNavigationMenu::NewTitle(xmlDocPtr doc, xmlNodePtr node) {
     if (title)
       free(title);
     title = strdup(conv);
+    title = compactspace(title);
     xmlFree(newtitle);
   }
 }
@@ -465,8 +937,7 @@ eOSState cNavigationMenu::Select(cLinkBase *link, eLinkType type)
   if (type == LT_MEDIA) {
     cDownloadProgress *progress = summaries.NewDownload();
     cFileDownloadRequest *req = \
-      new cFileDownloadRequest(history->Current()->GetID(), ref,
-			       progress);
+      new cFileDownloadRequest(history->Current()->GetID(), ref, progress);
     cWebviThread::Instance().AddRequest(req);
 
     Skins.Message(mtInfo, tr("Downloading in the background"));
@@ -477,7 +948,7 @@ eOSState cNavigationMenu::Select(cLinkBase *link, eLinkType type)
     return osEnd;
   } else {
     cWebviThread::Instance().AddRequest(new cMenuRequest(history->Current()->GetID(),
-                                                ref));
+        REQT_MENU, ref));
     Skins.Message(mtStatus, tr("Retrieving..."));
   }
 

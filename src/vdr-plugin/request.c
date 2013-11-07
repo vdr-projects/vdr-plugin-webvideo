@@ -13,6 +13,9 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
+#include <assert.h>
+#include <libxml/tree.h>
+#include <libxml/parser.h>
 #include <vdr/tools.h>
 #include <vdr/i18n.h>
 #include "request.h"
@@ -101,20 +104,41 @@ cDownloadProgress *cProgressVector::NewDownload() {
   return progress;
 }
 
+// --- cRequest ------------------------------------------------------------
+
+cRequest::cRequest(int _ID, eRequestType _type, const char *_href)
+: reqID(_ID), type(_type), href(strdup(_href)), aborted(false), finished(false)
+{
+}
+
+cRequest::~cRequest() {
+  free(href);
+}
+
+void cRequest::Abort() {
+  if (aborted || finished)
+    return;
+
+  aborted = true;
+};
+
+void cRequest::RequestDone(int errorcode, cString pharse) {
+  debug("RequestDone %d %s", errorcode, (const char *)pharse);
+  finished = true;
+}
+
 // --- cMenuRequest --------------------------------------------------------
 
-cMenuRequest::cMenuRequest(int ID, const char *wvtreference)
-: reqID(ID), aborted(false), finished(false), status(0), webvi(-1),
-  handle(-1), timer(NULL)
+cMenuRequest::cMenuRequest(int ID, eRequestType type, const char *wvtreference)
+: cRequest(ID, type, wvtreference), status(0), webvi(-1), handle(-1), timer(NULL)
 {
-  wvtref = strdup(wvtreference);
 }
 
 cMenuRequest::~cMenuRequest() {
   if (handle != -1) {
-    if (!finished)
+    if (!IsFinished())
       Abort();
-    webvi_delete_handle(webvi, handle);
+    webvi_delete_request(webvi, handle);
   }
 
   // do not delete timer
@@ -145,36 +169,36 @@ char *cMenuRequest::ExtractSiteName(const char *ref) {
 }
 
 void cMenuRequest::AppendQualityParamsToRef() {
-  if (!wvtref)
+  if (!href)
     return;
 
-  char *site = ExtractSiteName(wvtref);
+  char *site = ExtractSiteName(href);
   if (site) {
     const char *min = webvideoConfig->GetMinQuality(site, GetType());
     const char *max = webvideoConfig->GetMaxQuality(site, GetType());
     free(site);
 
     if (min && !max) {
-      cString newref = cString::sprintf("%s&minquality=%s", wvtref, min);
-      free(wvtref);
-      wvtref = strdup((const char *)newref);
+      cString newref = cString::sprintf("%s&minquality=%s", href, min);
+      free(href);
+      href = strdup((const char *)newref);
 
     } else if (!min && max) {
-      cString newref = cString::sprintf("%s&maxquality=%s", wvtref, max);
-      free(wvtref);
-      wvtref = strdup((const char *)newref);
+      cString newref = cString::sprintf("%s&maxquality=%s", href, max);
+      free(href);
+      href = strdup((const char *)newref);
 
     } else if (min && max) {
-      cString newref = cString::sprintf("%s&minquality=%s&maxquality=%s", wvtref, min, max);
-      free(wvtref);
-      wvtref = strdup((const char *)newref);
+      cString newref = cString::sprintf("%s&minquality=%s&maxquality=%s", href, min, max);
+      free(href);
+      href = strdup((const char *)newref);
     }
   }
 }
 
 WebviHandle cMenuRequest::PrepareHandle() {
   if (handle == -1) {
-    handle = webvi_new_request(webvi, wvtref, WEBVIREQ_MENU);
+    handle = webvi_new_request(webvi, href);
 
     if (handle != -1) {
       webvi_set_opt(webvi, handle, WEBVIOPT_WRITEFUNC, WriteCallback);
@@ -189,7 +213,8 @@ bool cMenuRequest::Start(WebviCtx webvictx) {
   debug("starting request %d", reqID);
 
   webvi = webvictx;
-  if ((PrepareHandle() != -1) && (webvi_start_handle(webvi, handle) == WEBVIERR_OK)) {
+  if ((PrepareHandle() != -1) &&
+      (webvi_start_request(webvi, handle) == WEBVIERR_OK)) {
     finished = false;
     return true;
   } else 
@@ -197,26 +222,24 @@ bool cMenuRequest::Start(WebviCtx webvictx) {
 }
 
 void cMenuRequest::RequestDone(int errorcode, cString pharse) {
-  debug("RequestDone %d %s", errorcode, (const char *)pharse);
-
-  finished = true;
+  cRequest::RequestDone(errorcode, pharse);
   status = errorcode;
   statusPharse = pharse;
 }
 
 void cMenuRequest::Abort() {
-  if (aborted || finished || handle == -1)
+  if (IsAborted() || IsFinished() || handle == -1)
     return;
 
   aborted = true;
-  webvi_stop_handle(webvi, handle);
+  webvi_stop_request(webvi, handle);
 };
 
-bool cMenuRequest::Success() {
+bool cMenuRequest::Success() const {
   return status == 0;
 }
 
-cString cMenuRequest::GetStatusPharse() {
+cString cMenuRequest::GetStatusPharse() const {
   return statusPharse;
 }
 
@@ -233,14 +256,15 @@ cString cMenuRequest::GetResponse() {
 
 cFileDownloadRequest::cFileDownloadRequest(int ID, const char *streamref, 
                                            cDownloadProgress *progress)
-:  cMenuRequest(ID, streamref), title(NULL), bytesDownloaded(0),
-   contentLength(-1), destfile(NULL), destfilename(NULL),
-   progressUpdater(progress), state(STATE_WEBVI)
+:  cMenuRequest(ID, REQT_FILE, streamref), title(NULL), bytesDownloaded(0),
+   contentLength(-1), streamSocket(1), destfile(NULL), destfilename(NULL),
+   progressUpdater(progress), state(STATE_GET_STREAM_URL),
+   downloadManager(NULL), streamDownloader(NULL)
 {
   if (progressUpdater)
     progressUpdater->AssociateWith(this);
 
-  AppendQualityParamsToRef();
+  //AppendQualityParamsToRef();
 }
 
 cFileDownloadRequest::~cFileDownloadRequest() {
@@ -248,16 +272,26 @@ cFileDownloadRequest::~cFileDownloadRequest() {
     destfile->Close();
     delete destfile;
   }
-  if (destfilename)
+  if (destfilename) {
     free(destfilename);
-  if (title)
+  }
+  if (streamDownloader) {
+    delete streamDownloader;
+    streamDownloader = NULL;
+  }
+  if (title) {
     free(title);
+  }
   // do not delete progressUpdater
+}
+
+void cFileDownloadRequest::SetDownloader(iAsyncFileDownloaderManager *dlmanager) {
+  downloadManager = dlmanager;
 }
 
 WebviHandle cFileDownloadRequest::PrepareHandle() {
   if (handle == -1) {
-    handle = webvi_new_request(webvi, wvtref, WEBVIREQ_FILE);
+    handle = webvi_new_request(webvi, href);
 
     if (handle != -1) {
       webvi_set_opt(webvi, handle, WEBVIOPT_WRITEFUNC, WriteCallback);
@@ -266,19 +300,6 @@ WebviHandle cFileDownloadRequest::PrepareHandle() {
   }
 
   return handle;
-}
-
-ssize_t cFileDownloadRequest::WriteData(const char *ptr, size_t len) {
-  if (!destfile) {
-    if (!OpenDestFile())
-      return -1;
-  }
-
-  bytesDownloaded += len;
-  if (progressUpdater)
-    progressUpdater->Progress(bytesDownloaded);
-
-  return destfile->Write(ptr, len);
 }
 
 bool cFileDownloadRequest::OpenDestFile() {
@@ -394,17 +415,23 @@ char *cFileDownloadRequest::GetExtension(const char *contentType, const char *ur
 }
 
 void cFileDownloadRequest::RequestDone(int errorcode, cString pharse) {
-  if (state == STATE_WEBVI) {
-    if (destfile)
-      destfile->Close();
+  if (errorcode == REQERR_OK) {
+    if (state == STATE_GET_STREAM_URL) {
+      parseStreamMetadataFromXml(inBuffer.Get(), inBuffer.Length(), streamUrl, streamTitle);
 
-    if (errorcode == 0)
+      StartStreamDownload();
+
+    } else if (state == STATE_STREAM_DOWNLOAD) {
+      if (destfile)
+        destfile->Close();
+
       StartPostProcessing();
-    else
-      state = STATE_FINISHED;
 
-  } else if (state == STATE_POSTPROCESS) {
-    postProcessPipe.Close();
+    } else if (state == STATE_POSTPROCESS) {
+      postProcessPipe.Close();
+      state = STATE_FINISHED;
+    }
+  } else {
     state = STATE_FINISHED;
   }
 
@@ -416,10 +443,65 @@ void cFileDownloadRequest::RequestDone(int errorcode, cString pharse) {
 }
 
 void cFileDownloadRequest::Abort() {
-  if (state == STATE_POSTPROCESS)
+  if (state == STATE_STREAM_DOWNLOAD) {
+    if (streamDownloader) {
+      delete streamDownloader;
+      streamDownloader = NULL;
+    }
+  } else if (state == STATE_POSTPROCESS) {
     postProcessPipe.Close();
+  }
 
   cMenuRequest::Abort();
+}
+
+void cFileDownloadRequest::StartStreamDownload() {
+  state = STATE_STREAM_DOWNLOAD;
+
+  if (IsRTMPStream(streamUrl)) {
+    RequestDone(REQERR_INTERNAL, "FIXME: downloading RTMP stream");
+  }
+
+  assert(!streamDownloader);
+  if (downloadManager) {
+    streamDownloader = downloadManager->CreateDownloadTask(streamUrl);
+    streamDownloader->SetReadCallback(StreamReadWrapper, this);
+    streamDownloader->SetFinishedCallback(StreamFinishedWrapper, this);
+  } else {
+    RequestDone(REQERR_INTERNAL, "No downloadManager");
+  }
+}
+
+bool cFileDownloadRequest::IsRTMPStream(const char *url) {
+  return (strncmp(url, "rtmp://", 7) == 0) ||
+    (strncmp(url, "rtmpe://", 8) == 0) ||
+    (strncmp(url, "rtmpt://", 8) == 0) ||
+    (strncmp(url, "rtmps://", 8) == 0) ||
+    (strncmp(url, "rtmpte://", 9) == 0) ||
+    (strncmp(url, "rtmpts://", 9) == 0);
+}
+
+ssize_t cFileDownloadRequest::StreamReadWrapper(void *buf, size_t len, void *data) {
+  cFileDownloadRequest *self = (cFileDownloadRequest *)data;
+  return self->WriteToDestFile(buf, len);
+}
+
+ssize_t cFileDownloadRequest::WriteToDestFile(void *buf, size_t len) {
+  if (!destfile) {
+    if (!OpenDestFile())
+      return -1;
+  }
+
+  bytesDownloaded += len;
+  if (progressUpdater)
+    progressUpdater->Progress(bytesDownloaded);
+
+  return destfile->Write(buf, len);
+}
+
+void cFileDownloadRequest::StreamFinishedWrapper(void *data) {
+  cFileDownloadRequest *self = (cFileDownloadRequest *)data;
+  self->RequestDone(REQERR_OK, "");
 }
 
 void cFileDownloadRequest::StartPostProcessing() {
@@ -448,13 +530,19 @@ void cFileDownloadRequest::StartPostProcessing() {
   fcntl(fileno(postProcessPipe), F_SETFL, flags);
 }
 
-int cFileDownloadRequest::File() {
-  FILE *f = postProcessPipe;
+int cFileDownloadRequest::ReadFile() {
+  if (state == STATE_STREAM_DOWNLOAD) {
+    return streamSocket;
+  } else if (state == STATE_POSTPROCESS) {
+    FILE *f = postProcessPipe;
 
-  if (f)
-    return fileno(f);
-  else
-    return -1;
+    if (f)
+      return fileno(f);
+    else
+      return -1;
+  }
+
+  return -1;
 }
 
 bool cFileDownloadRequest::Read() {
@@ -476,9 +564,9 @@ bool cFileDownloadRequest::Read() {
       info("post-processing of %s finished", destfilename);
 
       if (IsAborted())
-        RequestDone(-2, "Aborted");
+        RequestDone(REQERR_ABORT, "Aborted");
       else
-        RequestDone(0, "");
+        RequestDone(REQERR_OK, "");
 
       return true;
     } else {
@@ -495,13 +583,13 @@ bool cFileDownloadRequest::Read() {
 // --- cStreamUrlRequest ---------------------------------------------------
 
 cStreamUrlRequest::cStreamUrlRequest(int ID, const char *ref)
-: cMenuRequest(ID, ref) {
-  AppendQualityParamsToRef();
+: cMenuRequest(ID, REQT_STREAM, ref) {
+  //AppendQualityParamsToRef();
 }
 
 WebviHandle cStreamUrlRequest::PrepareHandle() {
   if (handle == -1) {
-    handle = webvi_new_request(webvi, wvtref, WEBVIREQ_STREAMURL);
+    handle = webvi_new_request(webvi, href);
 
     if (handle != -1) {
       webvi_set_opt(webvi, handle, WEBVIOPT_WRITEFUNC, WriteCallback);
@@ -512,10 +600,74 @@ WebviHandle cStreamUrlRequest::PrepareHandle() {
   return handle;
 }
 
+void cStreamUrlRequest::RequestDone(int errorcode, cString pharse) {
+  if (errorcode == 0) {
+    parseStreamMetadataFromXml(inBuffer.Get(), inBuffer.Length(), streamUrl, streamTitle);
+  }
+  cMenuRequest::RequestDone(errorcode, pharse);
+}
+
+void parseStreamMetadataFromXml(const char *xml, size_t length, cString& outUrl, cString& outTitle) {
+  outUrl = "";
+  outTitle = "";
+
+  xmlDocPtr doc = xmlReadMemory(xml, length, "menu.xml", NULL, 0);
+  if (doc == NULL) {
+    return;
+  }
+
+  xmlNodePtr root = xmlDocGetRootElement(doc);
+  if (root && xmlStrEqual(root->name, BAD_CAST "wvmenu")) {
+    xmlNodePtr node = root->children;
+    while (node) {
+      if (xmlStrEqual(node->name, BAD_CAST "ul")) {
+        xmlNodePtr linode = node->children;
+        while (linode) {
+          xmlNodePtr anode = linode->children;
+          while (anode) {
+            if (xmlStrEqual(anode->name, BAD_CAST "a")) {
+              xmlChar *xmlTitle = xmlNodeGetContent(anode);
+              if (xmlTitle) {
+                outTitle = cString((const char*)xmlTitle);
+                xmlFree(xmlTitle);
+              }
+
+              xmlChar *xmlHref = xmlGetNoNsProp(anode, BAD_CAST "href");
+              if (xmlHref) {
+                outUrl = cString((const char *)xmlHref);
+                xmlFree(xmlHref);
+              }
+
+              xmlFreeDoc(doc);
+              return;
+            }
+
+            anode = anode->next;
+          }
+
+          linode = linode->next;
+        }
+      }
+
+      node = node->next;
+    }
+  }
+
+  xmlFreeDoc(doc);
+}
+
+cString cStreamUrlRequest::getStreamUrl() {
+  return streamUrl;
+}
+
+cString cStreamUrlRequest::getStreamTitle() {
+  return streamTitle;
+}
+
 // --- cTimerRequest -------------------------------------------------------
 
 cTimerRequest::cTimerRequest(int ID, const char *ref)
-: cMenuRequest(ID, ref)
+: cMenuRequest(ID, REQT_TIMER, ref)
 {
 }
 

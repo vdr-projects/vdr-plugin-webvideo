@@ -19,6 +19,7 @@
 class cWebviThread : public cThread {
 private:
   WebviCtx webvi;
+  cCurlMultiManager downloadManager;
   cMutex requestMutex;
   cRequestVector activeRequestList;
   cRequestVector newRequestList;

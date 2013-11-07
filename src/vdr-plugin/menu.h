@@ -19,12 +19,26 @@
 
 extern cCharSetConv csc;
 
+// --- cFormItemList ---------------------------------------------
+
+class cFormItem;
+class cFormItemList {
+private:
+  cList<cFormItem> inputItems;
+  cFormItem *FindByName(const char *name);
+  cFormItem *FormItemFactory(const char *type, const char *name, const char *mainLabel);
+public:
+  void AddInputItem(const char *name, const char *type, const char *mainLabel,
+                    const char *value, const char *valueLabel);
+  void CreateAndAppendOsdItems(cList<cOsdItem> *destination, const char *uriTemplate);
+};
+
 // --- cXMLMenu --------------------------------------------------
 
 class cXMLMenu : public cOsdMenu {
 protected:
   virtual bool Deserialize(const char *xml);
-  virtual bool CreateItemFromTag(xmlDocPtr doc, xmlNodePtr node) = 0;
+  virtual bool ParseRootChild(xmlDocPtr doc, xmlNodePtr node) = 0;
 public:
   cXMLMenu(const char *Title, int c0 = 0, int c1 = 0, 
            int c2 = 0, int c3 = 0, int c4 = 0);
@@ -46,7 +60,9 @@ private:
   cVector<cLinkBase *> links;
   // streams[i] is the media stream link of the i:th item
   cVector<cLinkBase *> streams;
+  cFormItemList formItems;
   cProgressVector& summaries;
+  iAsyncFileDownloaderManager *dlmanager;
   char *title;
   char *reference;
   int shortcutMode;
@@ -54,13 +70,13 @@ private:
 protected:
   cHistory *history;
 
-  virtual bool CreateItemFromTag(xmlDocPtr doc, xmlNodePtr node);
+  virtual bool ParseRootChild(xmlDocPtr doc, xmlNodePtr node);
+  void ParseForm(xmlDocPtr doc, xmlNodePtr node);
+  void ParseFormItem(cFormItemList& formItems, xmlDocPtr doc, xmlNodePtr node);
+  void ParseUL(xmlDocPtr doc, xmlNodePtr node);
+  void CreateLinkElement(xmlDocPtr doc, xmlNodePtr node);
+  void CreateAndAddOSDLink(const char *title, const char *href, bool isStream);
   void AddLinkItem(cOsdItem *item, cLinkBase *ref, cLinkBase *streamref);
-  void NewLinkItem(xmlDocPtr doc, xmlNodePtr node);
-  void NewTextField(xmlDocPtr doc, xmlNodePtr node);
-  void NewItemList(xmlDocPtr doc, xmlNodePtr node);
-  void NewTextArea(xmlDocPtr doc, xmlNodePtr node);
-  void NewButton(xmlDocPtr doc, xmlNodePtr node);
   void NewTitle(xmlDocPtr doc, xmlNodePtr node);
   void UpdateHelp();
 
@@ -76,6 +92,14 @@ public:
 
   const char *Reference() const { return reference; }
   void Populate(const cHistoryObject *page, const char *statusmsg=NULL);
+};
+
+// --- cMenuLink -------------------------------------------------
+
+class cMenuLink {
+public:
+  virtual const char *GetURL() = 0;
+  virtual bool HasStream() = 0;
 };
 
 // --- cStatusScreen -------------------------------------------------------

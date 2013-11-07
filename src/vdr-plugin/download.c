@@ -10,6 +10,7 @@
 #include <sys/select.h>
 #include <unistd.h>
 #include <fcntl.h>
+#include <stdexcept>
 #include <vdr/tools.h>
 #include "download.h"
 #include "common.h"
@@ -27,9 +28,18 @@ static void diff_timeval(struct timeval *a, struct timeval *b,
   result->tv_usec = usec_diff;
 }
 
+static void merge_fdsets(fd_set *outputfds, fd_set *inputfds, int maxfd) {
+  for (int fd=0; fd<maxfd; fd++) {
+    if (FD_ISSET(fd, inputfds)) {
+      FD_SET(fd, outputfds);
+    }
+  }
+}
+
 // --- cWebviThread --------------------------------------------------------
 
-cWebviThread::cWebviThread() {
+cWebviThread::cWebviThread()
+{
   int pipefd[2];
 
   if (pipe(pipefd) == -1)
@@ -45,6 +55,8 @@ cWebviThread::cWebviThread() {
     webvi_set_config(webvi, WEBVI_CONFIG_TIMEOUT_DATA, this);
     webvi_set_config(webvi, WEBVI_CONFIG_TIMEOUT_CALLBACK, UpdateTimeout);
   }
+
+  // FIXME: downloadManager timeout callbacks
 }
 
 cWebviThread::~cWebviThread() {
@@ -140,6 +152,10 @@ void cWebviThread::StopFinishedRequests() {
   WebviMsg *donemsg;
   cMenuRequest *req;
 
+  downloadManager.CheckForFinished();
+  // FIXME: MoveToFinishedList
+
+
   do {
     donemsg = webvi_get_message(webvi, &msg_remaining);
 
@@ -164,11 +180,14 @@ void cWebviThread::Stop() {
 
 void cWebviThread::Action(void) {
   fd_set readfds, writefds, excfds;
+  fd_set webvi_readfds, webvi_writefds, webvi_excfds;
+  fd_set curl_readfds, curl_writefds, curl_excfds;
   int maxfd, s;
   struct timeval timeout, now;
-  long running_handles;
-  bool check_done = false;
+  bool check_for_finished_requests = false;
   bool has_request_files = false;
+  long running_webvi_handles;
+  long running_curl_handles = 0;
 
   if (webvi == 0) {
     error("Failed to get libwebvi context");
@@ -179,7 +198,33 @@ void cWebviThread::Action(void) {
     FD_ZERO(&readfds);
     FD_ZERO(&writefds);
     FD_ZERO(&excfds);
-    webvi_fdset(webvi, &readfds, &writefds, &excfds, &maxfd);
+    FD_ZERO(&webvi_readfds);
+    FD_ZERO(&webvi_writefds);
+    FD_ZERO(&webvi_excfds);
+    FD_ZERO(&curl_readfds);
+    FD_ZERO(&curl_writefds);
+    FD_ZERO(&curl_excfds);
+    maxfd = -1;
+
+    int tmpmaxfd;
+    webvi_fdset(webvi, &webvi_readfds, &webvi_writefds, &webvi_excfds, &tmpmaxfd);
+    if (tmpmaxfd != -1) {
+      merge_fdsets(&readfds, &webvi_readfds, tmpmaxfd);
+      merge_fdsets(&writefds, &webvi_writefds, tmpmaxfd);
+      merge_fdsets(&excfds, &webvi_excfds, tmpmaxfd);
+      if (tmpmaxfd > maxfd)
+        maxfd = tmpmaxfd;
+    }
+
+    downloadManager.FDSet(&curl_readfds, &curl_writefds, &curl_excfds, &tmpmaxfd);
+    if (tmpmaxfd != -1) {
+      merge_fdsets(&readfds, &curl_readfds, tmpmaxfd);
+      merge_fdsets(&writefds, &curl_writefds, tmpmaxfd);
+      merge_fdsets(&excfds, &curl_excfds, tmpmaxfd);
+      if (tmpmaxfd > maxfd)
+        maxfd = tmpmaxfd;
+    }
+    
     FD_SET(newreqread, &readfds);
     if (newreqread > maxfd)
       maxfd = newreqread;
@@ -187,7 +232,7 @@ void cWebviThread::Action(void) {
     has_request_files = false;
     requestMutex.Lock();
     for (int i=0; i<activeRequestList.Size(); i++) {
-      int fd = activeRequestList[i]->File();
+      int fd = activeRequestList[i]->ReadFile();
       if (fd != -1) {
         FD_SET(fd, &readfds);
         if (fd > maxfd)
@@ -219,61 +264,80 @@ void cWebviThread::Action(void) {
     } else if (s == 0) {
       // timeout
       timerActive = false;
-      webvi_perform(webvi, WEBVI_SELECT_TIMEOUT, WEBVI_SELECT_CHECK, &running_handles);
-      check_done = true;
+      webvi_perform(webvi, WEBVI_SELECT_TIMEOUT, WEBVI_SELECT_CHECK, &running_webvi_handles);
+      check_for_finished_requests = true;
+
+      // FIXME: curl timeout
 
     } else {
-      for (int fd=0; fd<=maxfd; fd++) {
+      int num_processed_fds = 0;
+      for (int fd=0; (fd<=maxfd) && (num_processed_fds<=s); fd++) {
         if (FD_ISSET(fd, &readfds)) {
-          if (fd == newreqread) {
+          if (FD_ISSET(fd, &webvi_readfds)) {
+            webvi_perform(webvi, fd, WEBVI_SELECT_READ, &running_webvi_handles);
+            num_processed_fds += 1;
+          } else if (FD_ISSET(fd, &curl_readfds)) {
+            downloadManager.HandleSocket(fd, WEBVI_SELECT_READ, &running_curl_handles);
+            num_processed_fds += 1;
+          } else if (fd == newreqread) {
             char tmpbuf[8];
             int n = read(fd, tmpbuf, 8);
             if (n > 0 && memchr(tmpbuf, 'S', n))
               Cancel(-1);
             ActivateNewRequest();
-          } else {
-            cMenuRequest *match = NULL;
-
-            if (has_request_files) {
-              requestMutex.Lock();
-              for (int i=0; i<activeRequestList.Size(); i++) {
-                if (fd == activeRequestList[i]->File()) {
-                  match = activeRequestList[i];
-                  break;
-                }
-              }
-              requestMutex.Unlock();
-
-              // call Read() after releasing the mutex
-              if (match) {
-                match->Read();
-                if (match->IsFinished())
-                  MoveToFinishedList(match);
+            num_processed_fds += 1;
+          } else if (has_request_files) {
+            requestMutex.Lock();
+            cMenuRequest *readRequest = NULL;
+            for (int i=0; i<activeRequestList.Size(); i++) {
+              if (fd == activeRequestList[i]->ReadFile()) {
+                readRequest = activeRequestList[i];
+                break;
               }
             }
+            requestMutex.Unlock();
 
-            if (!match) {
-              webvi_perform(webvi, fd, WEBVI_SELECT_READ, &running_handles);
-              check_done = true;
+            // call Read() after releasing the mutex
+            if (readRequest) {
+              num_processed_fds += 1;
+              readRequest->Read();
+              if (readRequest->IsFinished())
+                MoveToFinishedList(readRequest);
             }
           }
         }
-        if (FD_ISSET(fd, &writefds))
-          webvi_perform(webvi, fd, WEBVI_SELECT_WRITE, &running_handles);
-        if (FD_ISSET(fd, &excfds))
-          webvi_perform(webvi, fd, WEBVI_SELECT_EXCEPTION, &running_handles);
+        if (FD_ISSET(fd, &writefds)) {
+          if (FD_ISSET(fd, &webvi_writefds)) {
+            webvi_perform(webvi, fd, WEBVI_SELECT_WRITE, &running_webvi_handles);
+            num_processed_fds += 1;
+          } else if (FD_ISSET(fd, &curl_writefds)) {
+            downloadManager.HandleSocket(fd, WEBVI_SELECT_WRITE, &running_curl_handles);
+            num_processed_fds += 1;
+          }
+        }
+        if (FD_ISSET(fd, &excfds)) {
+          if (FD_ISSET(fd, &webvi_excfds)) {
+            webvi_perform(webvi, fd, WEBVI_SELECT_EXCEPTION, &running_webvi_handles);
+            num_processed_fds += 1;
+          } else if (FD_ISSET(fd, &curl_excfds)) {
+            downloadManager.HandleSocket(fd, WEBVI_SELECT_EXCEPTION, &running_curl_handles);
+            num_processed_fds += 1;
+          }
+        }
       }
+
+      check_for_finished_requests = (num_processed_fds > 0);
     }
 
-    if (check_done) {
+    if (check_for_finished_requests) {
       StopFinishedRequests();
-      check_done = false;
     }
   }
 }
 
 void cWebviThread::AddRequest(cMenuRequest *req) {
   requestMutex.Lock();
+  req->SetDownloader(&downloadManager);
   newRequestList.Append(req);
   requestMutex.Unlock();
 

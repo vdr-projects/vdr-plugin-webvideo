@@ -13,11 +13,18 @@
 #include <vdr/thread.h>
 #include <libwebvi.h>
 #include "buffer.h"
+#include "filedownloader.h"
 
 enum eRequestType { REQT_NONE, REQT_MENU, REQT_FILE, REQT_STREAM, REQT_TIMER };
 
+#define REQERR_OK 0
+#define REQERR_INTERNAL -1
+#define REQERR_ABORT -2
+
 class cFileDownloadRequest;
 class cWebviTimer;
+
+void parseStreamMetadataFromXml(const char *xml, size_t length, cString& outUrl, cString& outTitle);
 
 // --- cDownloadProgress ---------------------------------------------------
 
@@ -56,20 +63,45 @@ public:
   cDownloadProgress *NewDownload();
 };
 
-// --- cMenuRequest ----------------------------------------------------
+// --- cRequest ------------------------------------------------------------
 
-class cMenuRequest {
+class cRequest {
 private:
   int reqID;
+  eRequestType type;
+
+protected:
+  char *href;
   bool aborted;
   bool finished;
+
+public:
+  cRequest(int ID, eRequestType type, const char *href);
+  virtual ~cRequest();
+
+  int GetID() const { return reqID; }
+  virtual eRequestType GetType() const { return type; }
+  const char *GetReference() const { return href; }
+
+  virtual void RequestDone(int errorcode, cString pharse);
+  bool IsFinished() const { return finished; }
+  virtual void Abort();
+  bool IsAborted() const { return aborted; }
+
+  virtual int ReadFile() { return -1; }
+  virtual bool Read() { return true; }
+};
+
+// --- cMenuRequest --------------------------------------------------------
+
+class cMenuRequest : public cRequest {
+private:
   int status;
   cString statusPharse;
 
 protected:
   WebviCtx webvi;
   WebviHandle handle;
-  char *wvtref;
   cMemoryBuffer inBuffer;
   cWebviTimer *timer;
 
@@ -81,83 +113,95 @@ protected:
   void AppendQualityParamsToRef();
 
 public:
-  cMenuRequest(int ID, const char *wvtreference);
+  cMenuRequest(int ID, eRequestType type, const char *wvtreference);
   virtual ~cMenuRequest();
 
-  int GetID() { return reqID; }
-  WebviHandle GetHandle() { return handle; }
-  const char *GetReference() { return wvtref; }
+  WebviHandle GetHandle() const { return handle; }
 
   bool Start(WebviCtx webvictx);
-  virtual void RequestDone(int errorcode, cString pharse);
-  bool IsFinished() { return finished; }
   virtual void Abort();
-  bool IsAborted() { return aborted; }
+  virtual void RequestDone(int errorcode, cString pharse);
 
   // Return true if the lastest status code indicates success.
-  bool Success();
+  bool Success() const;
   // Return the status code
-  int GetStatusCode() { return status; }
+  int GetStatusCode() const { return status; }
   // Return the response pharse
-  cString GetStatusPharse();
-
-  virtual eRequestType GetType() { return REQT_MENU; }
+  cString GetStatusPharse() const;
+  virtual void SetDownloader(iAsyncFileDownloaderManager *dlmanager) {};
 
   // Return the content of the response message
   virtual cString GetResponse();
 
   void SetTimer(cWebviTimer *t) { timer = t; }
   cWebviTimer *GetTimer() { return timer; }
-
-  virtual int File() { return -1; }
-  virtual bool Read() { return true; }
 };
 
 // --- cFileDownloadRequest ------------------------------------------------
 
 class cFileDownloadRequest : public cMenuRequest {
 private:
-  enum eDownloadState { STATE_WEBVI, STATE_POSTPROCESS, STATE_FINISHED };
+  enum eDownloadState { STATE_GET_STREAM_URL, STATE_STREAM_DOWNLOAD,
+                        STATE_POSTPROCESS, STATE_FINISHED };
 
   char *title;
   long bytesDownloaded;
   long contentLength;
+  int streamSocket;
   cUnbufferedFile *destfile;
   char *destfilename;
   cDownloadProgress *progressUpdater;
   cPipe postProcessPipe;
   eDownloadState state;
+  cString streamUrl;
+  cString streamTitle;
+  iAsyncFileDownloaderManager *downloadManager;
+  iFileDownloadTask *streamDownloader;
+
+  static ssize_t StreamReadWrapper(void *buf, size_t count, void *data);
+  static void StreamFinishedWrapper(void *data);
 
 protected:
   virtual WebviHandle PrepareHandle();
-  virtual ssize_t WriteData(const char *ptr, size_t len);
   bool OpenDestFile();
   char *GetExtension(const char *contentType, const char *url);
+  void StartStreamDownload();
   void StartPostProcessing();
+  ssize_t WriteToDestFile(void *buf, size_t len);
+
+  static bool IsRTMPStream(const char *url);
 
 public:
   cFileDownloadRequest(int ID, const char *streamref, 
                        cDownloadProgress *progress);
   virtual ~cFileDownloadRequest();
 
-  eRequestType GetType() { return REQT_FILE; }
+  void SetDownloader(iAsyncFileDownloaderManager *dlmanager);
+
   void RequestDone(int errorcode, cString pharse);
   void Abort();
 
-  int File();
+  virtual int ReadFile();
   bool Read();
 };
 
 // --- cStreamUrlRequest ---------------------------------------------------
 
 class cStreamUrlRequest : public cMenuRequest {
+private:
+  cString streamUrl;
+  cString streamTitle;
+
 protected:
   virtual WebviHandle PrepareHandle();
 
 public:
   cStreamUrlRequest(int ID, const char *ref);
 
-  eRequestType GetType() { return REQT_STREAM; }
+  virtual void RequestDone(int errorcode, cString pharse);
+
+  cString getStreamUrl();
+  cString getStreamTitle();
 };
 
 // --- cTimerRequest -------------------------------------------------------
@@ -165,8 +209,6 @@ public:
 class cTimerRequest : public cMenuRequest {
 public:
   cTimerRequest(int ID, const char *ref);
-
-  eRequestType GetType() { return REQT_TIMER; }
 };
 
 // --- cRequestVector ------------------------------------------------------
